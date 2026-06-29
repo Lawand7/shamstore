@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/screen/add_product_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class MyProductsPage extends StatefulWidget {
   final dynamic product;
@@ -35,7 +35,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً واختيار الألوان المناسبة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -92,7 +91,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
     );
   }
 
-  // 📈 قسم الإحصائيات العلوي
   Widget _buildStats(BuildContext context, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -135,7 +133,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
     );
   }
 
-  // 📑 أشرطة التبويب (Tabs)
   Widget _buildTabs(BuildContext context, bool isDarkMode) {
     return Container(
       color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
@@ -183,7 +180,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
     );
   }
 
-  // 📦 قائمة المنتجات المعروضة
   Widget _buildProductsList(BuildContext context, bool isDarkMode) {
     final products = _filteredProducts;
     if (products.isEmpty) {
@@ -213,7 +209,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
     final isPublished = product['status'] == 'منشور';
     final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
-    // ألوان شارات الحالة والتحكم المحدثة للدارك مود لضمان التباين وجمالية المظهر النيلي
     final Color greenColor = isDarkMode ? const Color(0xFF10B981) : const Color(0xFF059669);
     final Color redColor = isDarkMode ? const Color(0xFFF87171) : const Color(0xFFEF4444);
     final Color hideColor = isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey;
@@ -295,7 +290,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
           Divider(height: 1, color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border),
           const SizedBox(height: 8),
 
-          // ⚙️ أزرار التحكم بالمنتج (تعديل، حذف، إخفاء/نشر)
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

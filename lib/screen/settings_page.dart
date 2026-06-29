@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة الخاص بك
-import 'package:shamstore/main.dart'; // استيراد الـ main للوصول لدالة تغيير اللغة وتغيير الثيم
+import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/main.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,18 +13,14 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية في التطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // جلب اللغة الحالية المطبقة في التطبيق لمعرفة القيمة الابتدائية للـ Dropdown
     Locale currentLocale = Localizations.localeOf(context);
     String selectedLanguage = currentLocale.languageCode == 'ar' ? 'العربية' : 'English';
 
     return Scaffold(
-      // 🎨 التبديل التلقائي لخلفية الصفحة كاملة بناءً على الثيم
       backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
       appBar: AppBar(
-        // 🎨 شريط الحالة العلوي (نيلي داكن للدارك، وأزرق بريمري للايت)
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         title: Text(
           AppLocalizations.of(context).translate('settings'), // ترجمة العنوان
@@ -41,7 +37,6 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(20.0),
         child: Container(
           decoration: BoxDecoration(
-            // 🎨 كارد الخيارات الخلفي (نيلي داكن للدارك، وأبيض للايت)
             color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -101,16 +96,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
 
-              // 🎨 فاصل متناسق اللون هندسياً مع الدارك مود
               Divider(height: 1, color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border, indent: 16, endIndent: 16),
 
-              // 🌙 خيار الدارك مود (الوضع الداكن المتفاعل)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Switch(
-                      // 💡 قيمته تتبع حالة التطبيق الفعلية بلحظتها
                       value: isDarkMode,
                       activeColor: AppTheme.accentBlue, // أزرق نيون مضيء للدارك
                       activeTrackColor: AppTheme.selectedBorder.withOpacity(0.4),
@@ -118,7 +110,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       inactiveTrackColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
                       onChanged: (value) {
                         setState(() {
-                          // 💡 التحديث الفوري المباشر عبر الـ themeNotifier المستمع بالـ main
                           if (value) {
                             themeNotifier.value = ThemeMode.dark;
                           } else {

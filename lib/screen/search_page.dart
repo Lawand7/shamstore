@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/category_products.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class SearchPage extends StatelessWidget {
   const SearchPage({super.key});
 
-  // مصفوفة البيانات كما هي، وسيتم تعديل تلوين الأيقونات ديناميكياً بالأسفل بما يناسب الوضع الداكن
   final List<Map<String, dynamic>> _allCategories = const [
     {'name': 'ملابس', 'icon': Icons.checkroom_rounded, 'color': Color(0xFF0F4C8A)},
     {'name': 'أحذية', 'icon': Icons.ice_skating_rounded, 'color': Color(0xFFE11D48)},
@@ -22,7 +21,6 @@ class SearchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً واختيار الألوان المناسبة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -49,7 +47,6 @@ class SearchPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 🔍 حقل البحث
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -78,7 +75,6 @@ class SearchPage extends StatelessWidget {
             ),
           ),
 
-          // 📐 شبكة التصنيفات
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
@@ -92,7 +88,6 @@ class SearchPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final category = _allCategories[index];
 
-                // ترجمة الأسماء ظاهرياً فقط بناءً على القيمة البرمجية الثابتة للمصفوفة
                 String displayCategoryName = category['name'];
                 if (category['name'] == 'ملابس') displayCategoryName = AppLocalizations.of(context).translate('Clothes');
                 if (category['name'] == 'أحذية') displayCategoryName = AppLocalizations.of(context).translate('Shoes');
@@ -105,7 +100,6 @@ class SearchPage extends StatelessWidget {
                 if (category['name'] == 'أدوات منزلية') displayCategoryName = AppLocalizations.of(context).translate('Housewares');
                 if (category['name'] == 'ألعاب') displayCategoryName = AppLocalizations.of(context).translate('Games');
 
-                // تعديل تفتيح الألوان في الوضع الداكن للأيقونات لتصبح مريحة وواضحة
                 final Color categoryColor = category['color'] as Color;
                 final Color finalIconColor = isDarkMode ? Color.lerp(categoryColor, Colors.white, 0.3)! : categoryColor;
 

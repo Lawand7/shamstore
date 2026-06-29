@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'reset_password_screen.dart';
-import 'package:shamstore/them/app_theme.dart'; // استيراد ثيم التطبيق الموحد
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة
+import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -21,7 +21,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً لتحديد الألوان النشطة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
@@ -48,7 +47,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: [
               const SizedBox(height: 40),
 
-              // دائرة الأيقونة العلوية
               Container(
                 height: 90,
                 width: 90,
@@ -77,7 +75,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 40),
 
-              // تسمية حقل الإدخال المحاذية حسب اللغة
               Align(
                 alignment: _isArabic() ? Alignment.centerRight : Alignment.centerLeft,
                 child: Padding(
@@ -89,11 +86,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
 
-              // حقل إدخال البريد الإلكتروني
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                textAlign: TextAlign.left, // البريد دائماً يسار
+                textAlign: TextAlign.left,
                 style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'example@gmail.com',
@@ -113,7 +109,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 40),
 
-              // زر الإرسال الأساسي
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -134,7 +129,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 12),
 
-              // زر التخطي المؤقت الشفاف
               SizedBox(
                 width: double.infinity,
                 height: 52,

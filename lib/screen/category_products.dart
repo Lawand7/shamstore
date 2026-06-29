@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/notifications_page.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استدعاء ملف الترجمة الخاص بك
+import 'package:shamstore/utils/app_localizations.dart';
 
 class CategoryProductsScreen extends StatelessWidget {
   final String categoryName;
@@ -10,7 +10,6 @@ class CategoryProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
@@ -96,7 +95,6 @@ class CategoryProductsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
 
-                        // 🛠️ تم إصلاح طريقة تمرير الستقايل هنا داخل الـ Text مباشرة من دون استخدام .apply الخاطئ
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

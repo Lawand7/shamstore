@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
-    // مصفوفة البيانات التجريبية بقيت كما هي برمجياً لحين ربطها مع الـ Backend
     final List<Map<String, dynamic>> notifications = [
       {
         'title': 'تم شحن طلبك الجديد 📦',
@@ -19,7 +17,7 @@ class NotificationsPage extends StatelessWidget {
         'time': 'منذ 5 دقائق',
         'isRead': false,
         'icon': Icons.local_shipping_outlined,
-        'color': activeColor, // تلوين أيقونة الشحن بلون الثيم النشط
+        'color': activeColor,
       },
       {
         'title': 'رصيد جديد متاح 💰',
@@ -49,7 +47,7 @@ class NotificationsPage extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(
-            isArabic ? Icons.arrow_forward : Icons.arrow_back, // 💡 مرونة سهم العودة حسب اتجاه اللغة
+            isArabic ? Icons.arrow_forward : Icons.arrow_back,
             color: AppTheme.white,
           ),
           onPressed: () => Navigator.pop(context),
@@ -96,7 +94,6 @@ class NotificationsPage extends StatelessWidget {
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              // استخدام leading و trailing لقلب موقع الأيقونة تلقائياً تبعاً لاتجاه التطبيق
               leading: isArabic ? null : Container(
                 width: 40,
                 height: 40,

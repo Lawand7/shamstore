@@ -17,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // المتغير المسؤول عن تحديد نوع الحساب (مشتري افتراضياً)
   bool _isBuyerSelected = true;
 
   @override
@@ -29,11 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص إذا كان التطبيق حالياً في الوضع المظلم أم الفاتح ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // التبديل التلقائي للخلفية العامة
       backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
       body: SingleChildScrollView(
         child: Column(
@@ -52,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 220,
       decoration: BoxDecoration(
-        // التبديل بين شريط الحالة النيلي الداكن والأزرق القديم
         color: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(40),
@@ -105,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          // كارد الخلفية (نيلي داكن للدارك، وأبيض للايت)
           color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -120,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // شريط التبديل المتفاعل
             _buildRoleToggle(isDarkMode),
             const SizedBox(height: 20),
 

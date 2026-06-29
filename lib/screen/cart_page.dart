@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/screen/checkout_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/notifications_page.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استدعاء ملف الترجمة الخاص بك
+import 'package:shamstore/utils/app_localizations.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -39,7 +39,6 @@ class _CartPageState extends State<CartPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -133,7 +132,6 @@ class _CartPageState extends State<CartPage> {
       ),
       child: Row(
         children: [
-          // أزرار الحذف والدفع من السلة
           Column(
             children: [
               GestureDetector(
@@ -186,7 +184,6 @@ class _CartPageState extends State<CartPage> {
           ),
           const SizedBox(width: 10),
 
-          // أيقونة المنتج الخلفية
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(
@@ -197,7 +194,6 @@ class _CartPageState extends State<CartPage> {
           ),
           const SizedBox(width: 10),
 
-          // تفاصيل السلعة والكمية والسعر
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,

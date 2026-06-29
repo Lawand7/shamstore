@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استدعاء ملف الترجمة الخاص بك
+import 'package:shamstore/utils/app_localizations.dart';
 
 class AboutAppPage extends StatelessWidget {
   const AboutAppPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // 🎨 التبديل التلقائي للخلفية العامة
       backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
       appBar: AppBar(
-        // 🎨 شريط الحالة العلوي متناسق مع الثيم المختار
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         title: Text(
           AppLocalizations.of(context).translate('About App'),
@@ -22,7 +19,7 @@ class AboutAppPage extends StatelessWidget {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.white), // تم تعديلها لـ arrow_back لتتناسب مع الرجوع الصحيح
+          icon: const Icon(Icons.arrow_back, color: AppTheme.white),
           onPressed: () => Navigator.pop(context),
         ),
         elevation: 0,
@@ -32,7 +29,7 @@ class AboutAppPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 🖼️ شعار التطبيق كصورة (Logo Image)
+
             Center(
               child: Container(
                 width: 110,
@@ -48,9 +45,8 @@ class AboutAppPage extends StatelessWidget {
                       offset: const Offset(0, 4),
                     )
                   ],
-                  // هنا يتم استدعاء مسار صورة الشعار الخاص بمتجرك
                   image: const DecorationImage(
-                    image: AssetImage('assets/images/app_logo1.png'), // تأكد من مطابقة المسار لملفاتك
+                    image: AssetImage('assets/images/mylogo.png'),
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -58,7 +54,6 @@ class AboutAppPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // اسم التطبيق
             Text(
               'ShamStore',
               style: TextStyle(
@@ -70,14 +65,12 @@ class AboutAppPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // نص فرعي
             Text(
               AppLocalizations.of(context).translate('Your integrated platform for shopping and services'),
               style: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
             ),
             const SizedBox(height: 30),
 
-            // 📄 وصف التطبيق داخل كارد أنيق ومتفاعل
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -103,9 +96,8 @@ class AboutAppPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // ✨ مميزات التطبيق
             Align(
-              alignment: AlignmentDirectional.centerStart, // يدعم الاتجاهين تلقائياً حسب اللغة
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 AppLocalizations.of(context).translate('What makes ShamStore special?'),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
@@ -120,7 +112,6 @@ class AboutAppPage extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            // 📆 معلومات الإصدار والحقوق
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -145,7 +136,6 @@ class AboutAppPage extends StatelessWidget {
     );
   }
 
-  // ودجت مخصصة لبناء أسطر المميزات بالتناسق مع التصميم والاتجاهات الذكية
   Widget _buildFeatureRow(BuildContext context, IconData icon, String translationKey, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

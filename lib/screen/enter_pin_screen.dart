@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/wallet_page.dart';
 import 'package:shamstore/screen/my_balanc_page.dart';
-// 💡 تم تعديل الاستيراد ليتوافق مع الصفحة المخصصة لتفاصيل المنتج
 import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -47,19 +46,16 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
   }
 
   void _verifyPin() {
-    // 1️⃣ أولاً: التوجيه الصحيح لصفحة تفاصيل المنتج عند القدوم من الكارد
     if (widget.isComingFromCard && widget.productData != null) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          // 💡 قمنا بتغييرها هنا إلى ProductDetailsPage لتطابق كود الكارد لديك
           builder: (_) => ProductDetailsPage(product: widget.productData!),
         ),
       );
       return;
     }
 
-    // 2️⃣ ثانياً: التوجيه الاعتيادي للمحفظة
     if (widget.isBuyer) {
       Navigator.pushReplacement(
         context,
@@ -75,7 +71,6 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
@@ -85,7 +80,6 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
         children: [
           _buildHeader(isDarkMode),
           const Spacer(),
-          // مؤشرات الـ PIN المتحركة
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
@@ -111,7 +105,6 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
             ),
           ),
           const Spacer(),
-          // حاوية لوحة المفاتيح السفلية
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             decoration: BoxDecoration(
@@ -177,7 +170,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
           children: [
             Positioned(
               left: _isArabic() ? null : 20,
-              right: _isArabic() ? 20 : null, // 💡 مرونة موقع زر العودة حسب اتجاه لغة الواجهة
+              right: _isArabic() ? 20 : null,
               top: 10,
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -188,7 +181,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    _isArabic() ? Icons.arrow_back_ios_rounded : Icons.arrow_back_ios_new_rounded, // 💡 قلب اتجاه السهم
+                    _isArabic() ? Icons.arrow_back_ios_rounded : Icons.arrow_back_ios_new_rounded,
                     color: AppTheme.white,
                     size: 16,
                   ),

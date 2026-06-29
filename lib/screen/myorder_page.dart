@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/notifications_page.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({super.key});
@@ -142,8 +142,9 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     );
   }
 
-  void _showRatingDialog(BuildContext context, String productName, bool isDarkMode) {
+  void _showRatingDialog(BuildContext context, String sellerName, bool isDarkMode) {
     int selectedRating = 0;
+    final bool isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     showDialog(
       context: context,
@@ -152,7 +153,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           title: Text(
-            AppLocalizations.of(context).translate('Rate Product'),
+            AppLocalizations.of(context).translate('rate_seller'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
           ),
@@ -162,9 +163,9 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    productName,
+                    sellerName,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -196,19 +197,27 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context).translate('Cancel'), style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 13)),
+              child: Text(
+                  AppLocalizations.of(context).translate('Cancel'),
+                  style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 13)
+              ),
             ),
             ElevatedButton(
               onPressed: () {
                 if (selectedRating == 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context).translate('Please select at least one star'), textAlign: TextAlign.right)),
+                    SnackBar(
+                        content: Text(AppLocalizations.of(context).translate('please_select_star'), textAlign: isAr ? TextAlign.right : TextAlign.left)
+                    ),
                   );
                 } else {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('${AppLocalizations.of(context).translate('Thanks for rating')} $selectedRating ⭐', textAlign: TextAlign.right),
+                      content: Text(
+                          '${AppLocalizations.of(context).translate('thanks_for_rating_seller')} $selectedRating ⭐',
+                          textAlign: isAr ? TextAlign.right : TextAlign.left
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -219,7 +228,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               ),
-              child: Text(AppLocalizations.of(context).translate('Confirm'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              child: Text(
+                  AppLocalizations.of(context).translate('Confirm'),
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)
+              ),
             ),
           ],
         );
@@ -266,99 +278,108 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     final isDelivered = order['status'] == 'delivered';
     final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-                  borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        // 🔄 عند الضغط على الكرت تفتح واجهة التفاصيل (قم بإنشائها وربطها هنا لاحقاً)
+        // Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsPage(order: order)));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(order['icon'], size: 32, color: activeColor),
                 ),
-                child: Icon(order['icon'], size: 32, color: activeColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(order['name'], style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
+                      const SizedBox(height: 4),
+                      Text('${order['shop']} | ${order['city']}', style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey)),
+                      const SizedBox(height: 4),
+                      Text('${order['price']} ${AppLocalizations.of(context).translate('SP')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: activeColor)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isDelivered
+                      ? (isDarkMode ? Colors.green.withOpacity(0.15) : const Color(0xFFE6F9F0))
+                      : (isDarkMode ? Colors.orange.withOpacity(0.15) : const Color(0xFFFFF4E5)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(order['name'], style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
-                    const SizedBox(height: 4),
-                    Text('${order['shop']} | ${order['city']}', style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey)),
-                    const SizedBox(height: 4),
-                    Text('${order['price']} ${AppLocalizations.of(context).translate('SP')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: activeColor)),
+                    Text(
+                      isDelivered ? AppLocalizations.of(context).translate('Delivered') : AppLocalizations.of(context).translate('Pending Delivery'),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDelivered ? Colors.green : Colors.orange),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(isDelivered ? Icons.check_circle : Icons.local_shipping_outlined, size: 14, color: isDelivered ? Colors.green : Colors.orange),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDelivered
-                    ? (isDarkMode ? Colors.green.withOpacity(0.15) : const Color(0xFFE6F9F0))
-                    : (isDarkMode ? Colors.orange.withOpacity(0.15) : const Color(0xFFFFF4E5)),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isDelivered ? AppLocalizations.of(context).translate('Delivered') : AppLocalizations.of(context).translate('Pending Delivery'),
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDelivered ? Colors.green : Colors.orange),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(isDelivered ? Icons.check_circle : Icons.local_shipping_outlined, size: 14, color: isDelivered ? Colors.green : Colors.orange),
-                ],
-              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Divider(color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border, height: 1),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _actionButton(
-                label: AppLocalizations.of(context).translate('Report'),
-                icon: Icons.flag_outlined,
-                color: Colors.red,
-                onTap: () => _showReportBottomSheet(context, order['name'], isDarkMode),
-              ),
-              const SizedBox(width: 8),
-
-              _actionButton(
-                label: AppLocalizations.of(context).translate('Rate'),
-                icon: Icons.star_border,
-                color: Colors.orange,
-                onTap: () => _showRatingDialog(context, order['name'], isDarkMode),
-              ),
-              const SizedBox(width: 8),
-              if (!isDelivered)
+            const SizedBox(height: 10),
+            Divider(color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border, height: 1),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 _actionButton(
-                  label: AppLocalizations.of(context).translate('Confirm Button'),
-                  icon: Icons.check,
-                  color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
-                  onTap: () {},
+                  label: AppLocalizations.of(context).translate('Report'),
+                  icon: Icons.flag_outlined,
+                  color: Colors.red,
+                  onTap: () => _showReportBottomSheet(context, order['name'], isDarkMode),
                 ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+
+                if (isDelivered) ...[
+                  _actionButton(
+                    label: AppLocalizations.of(context).translate('Rate'),
+                    icon: Icons.star_border,
+                    color: Colors.orange,
+                    onTap: () => _showRatingDialog(context, order['shop'], isDarkMode),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+
+                if (!isDelivered)
+                  _actionButton(
+                    label: AppLocalizations.of(context).translate('Confirm Button'),
+                    icon: Icons.check,
+                    color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+                    onTap: () {},
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

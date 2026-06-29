@@ -26,7 +26,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # 👈 تم ضبط المسارات هنا ليتعرف فلاتر على الصور وملفات الـ JSON داخل الـ lib
   assets:
     - assets/images/
     - assets/l10n/
@@ -34,4 +33,4 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_logo1.png"
+  image_path: "assets/images/mylogo.png"

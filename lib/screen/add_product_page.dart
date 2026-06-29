@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/my_products_page.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استدعاء ملف الترجمة الخاص بك
+import 'package:shamstore/utils/app_localizations.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
@@ -19,7 +19,6 @@ class _AddProductPageState extends State<AddProductPage> {
   String? _selectedGovernorate;
   bool _imageSelected = false;
 
-  // الإبقاء على القيم بالإنجليزية كمفاتيح ثابتة للكود وقواعد البيانات
   final List<String> _categories = ['Clothing', 'Shoes', 'Electronics', 'Books', 'Furniture', 'Sports', 'Supplies', 'Household', 'Toys'];
   final List<String> _governorates = ['Damascus', 'Aleppo', 'Homs', 'Hama', 'Latakia', 'Tartus', 'Deir ez-Zor', 'Al-Hasakah', 'Raqqa', 'Daraa', 'Sweida', 'Quneitra', 'Idlib'];
 
@@ -34,7 +33,6 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class ProductDetailsPage extends StatelessWidget {
   final Map<String, dynamic> product;
@@ -9,12 +9,17 @@ class ProductDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً واختيار الألوان المناسبة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
     final Color activeTextDark = isDarkMode ? AppTheme.textPrimary : AppTheme.textDark;
+
+    final String sellerName = product['sellerName'] ??
+        (product['name'].toString().contains('حذاء') ? 'لاوند سبانوتي' : 'أغيد الخطيب');
+
+    final double sellerRating = product['sellerRating'] ??
+        (product['name'].toString().contains('حذاء') ? 4.8 : 4.9);
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
@@ -37,7 +42,6 @@ class ProductDetailsPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 🖼️ منطقة عرض صورة المنتج (الأيقونة الكبيرة)
           Expanded(
             child: Container(
               width: double.infinity,
@@ -52,7 +56,6 @@ class ProductDetailsPage extends StatelessWidget {
             ),
           ),
 
-          // 📄 بطاقة تفاصيل المنتج السفلية
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -80,7 +83,6 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // 💰 قسم عرض السعر والعملة
                 Row(
                   mainAxisAlignment: isArabic ? MainAxisAlignment.end : MainAxisAlignment.start,
                   children: isArabic
@@ -100,43 +102,54 @@ class ProductDetailsPage extends StatelessWidget {
                 Divider(color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border),
                 const SizedBox(height: 12),
 
-                // 📌 التقييم، المبيعات، والمدينة
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: isArabic
                       ? [
                     Row(
                       children: [
-                        Text('(${product['sold']} ${AppLocalizations.of(context).translate('sold')})', style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 12)),
+                        Text(
+                            sellerName,
+                            style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 13, fontWeight: FontWeight.w500)
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                            sellerRating.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange)
+                        ),
                         const SizedBox(width: 4),
-                        Text(product['rating'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: Colors.orange, size: 15),
+                        const Icon(Icons.star, color: Colors.orange, size: 16),
                       ],
                     ),
                     Row(
                       children: [
-                        Text(product['city'], style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 12)),
+                        Text(product['city'], style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 13)),
                         const SizedBox(width: 4),
-                        Icon(Icons.location_on, color: activePrimary, size: 15),
+                        Icon(Icons.location_on, color: activePrimary, size: 16),
                       ],
                     ),
                   ]
                       : [
                     Row(
                       children: [
-                        Icon(Icons.location_on, color: activePrimary, size: 15),
+                        Icon(Icons.location_on, color: activePrimary, size: 16),
                         const SizedBox(width: 4),
-                        Text(product['city'], style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 12)),
+                        Text(product['city'], style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 13)),
                       ],
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.orange, size: 15),
+                        const Icon(Icons.star, color: Colors.orange, size: 16),
                         const SizedBox(width: 4),
-                        Text(product['rating'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange)),
-                        const SizedBox(width: 4),
-                        Text('(${product['sold']} ${AppLocalizations.of(context).translate('sold')})', style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 12)),
+                        Text(
+                            sellerRating.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange)
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                            sellerName,
+                            style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 13, fontWeight: FontWeight.w500)
+                        ),
                       ],
                     ),
                   ],
@@ -156,7 +169,6 @@ class ProductDetailsPage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // 🛒 زر الإضافة إلى السلة
                 SizedBox(
                   width: double.infinity,
                   height: 46,

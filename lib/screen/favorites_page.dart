@@ -3,7 +3,7 @@ import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/home_page.dart';
 
 class FavoritesPage extends StatefulWidget {
-  final List<Map<String, dynamic>> allProducts; // استقبال البيانات من الهوم بيج
+  final List<Map<String, dynamic>> allProducts;
 
   const FavoritesPage({super.key, required this.allProducts});
 
@@ -14,11 +14,9 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 
-    // تصفية وعرض المنتجات المفضلة فقط التي تساوي true
     final favoriteProducts = widget.allProducts.where((p) => p['fav'] == true).toList();
 
     return Scaffold(
@@ -133,7 +131,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       ),
                     ],
                   ),
-                  // عند الضغط على القلب الأحمر داخل المفضلة يتم إزالتها وتحديث الصفحة فوراً
                   Positioned(
                     top: 8, left: 8,
                     child: GestureDetector(

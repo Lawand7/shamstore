@@ -18,7 +18,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   String? _selectedGovernorate;
   String? _profileImagePath;
 
-  // 💡 متغيرات إضافية لحالة البائع
   String? _idCardImagePath;
   bool _isLocationSelected = false;
 
@@ -40,12 +39,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     setState(() => _profileImagePath = 'selected');
   }
 
-  // 💡 دالة رفع صورة الهوية الخاصة بالبائع
   void _pickIdCardImage() {
     setState(() => _idCardImagePath = 'id_selected');
   }
 
-  // 💡 دالة محاكاة اختيار الموقع من الخريطة المصغرة
   void _openMiniMap() {
     setState(() => _isLocationSelected = true);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -99,7 +96,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -117,7 +113,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   const SizedBox(height: 16),
                   _buildRoleSelector(isDarkMode),
 
-                  // 💡 الحقول الشرطية: تظهر فقط عند اختيار دور البائع (seller)
                   if (_selectedRole == 'seller') ...[
                     const SizedBox(height: 16),
                     _buildIdCardPicker(isDarkMode),

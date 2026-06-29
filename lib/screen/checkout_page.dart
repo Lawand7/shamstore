@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استدعاء ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class CheckoutPage extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -23,7 +23,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(

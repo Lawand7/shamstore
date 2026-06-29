@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -27,7 +27,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً واختيار الألوان المناسبة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
     final Color activeTextDark = isDarkMode ? AppTheme.textPrimary : AppTheme.textDark;
@@ -70,7 +69,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
               const SizedBox(height: 30),
 
-              // 🔢 قسم إدخال الـ OTP (4 أرقام)
               Align(
                 alignment: _isArabic() ? Alignment.centerRight : Alignment.centerLeft,
                 child: Padding(
@@ -110,7 +108,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 🔒 حقل كلمة السر الجديدة
               Align(
                 alignment: _isArabic() ? Alignment.centerRight : Alignment.centerLeft,
                 child: Padding(
@@ -139,7 +136,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 🔒 حقل تأكيد كلمة السر الجديدة
               Align(
                 alignment: _isArabic() ? Alignment.centerRight : Alignment.centerLeft,
                 child: Padding(
@@ -168,7 +164,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
               const SizedBox(height: 35),
 
-              // 💾 زر الحفظ النهائي
               SizedBox(
                 width: double.infinity,
                 height: 52,

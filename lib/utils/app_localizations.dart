@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 
 class AppLocalizations {
   final Locale locale;
-  // 💡 جعلناها static لكي نحافظ على المرجع الموحد للنصوص عبر الـ 40 واجهة دون تضارب
   static Map<String, String> _localizedStrings = {};
 
   AppLocalizations(this.locale);
@@ -50,7 +49,6 @@ class AppLocalizationsDelegate
     return localizations;
   }
 
-  // 💡 قمنا بتغييرها إلى true لكي يكتشف النظام تغيير اللغة ويقوم بتحديث النصوص فوراً
   @override
   bool shouldReload(LocalizationsDelegate<AppLocalizations> old) => true;
 }

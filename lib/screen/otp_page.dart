@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/home_page.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة الخاص بك
+import 'package:shamstore/utils/app_localizations.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
@@ -50,7 +50,6 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(

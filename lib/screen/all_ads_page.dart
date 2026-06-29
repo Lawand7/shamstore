@@ -9,7 +9,6 @@ class AllAdsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final List<Map<String, dynamic>> dummyAds = [

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/screen/charge_wallet_page.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // 💡 استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class WalletPage extends StatelessWidget {
   const WalletPage({super.key});
@@ -14,7 +14,6 @@ class WalletPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً واختيار الألوان المناسبة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -141,7 +140,6 @@ class WalletPage extends StatelessWidget {
                   final t = _transactions[index];
                   final isIn = t['type'] == 'in';
 
-                  // تعديل ألوان الإيداع والسحب لتناسب الخلفية الداكنة وتكون مريحة للعين
                   final Color greenColor = isDarkMode ? const Color(0xFF10B981) : const Color(0xFF059669);
                   final Color redColor = isDarkMode ? const Color(0xFFF87171) : const Color(0xFFEF4444);
 

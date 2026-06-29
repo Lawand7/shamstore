@@ -14,7 +14,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -77,7 +76,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
           ),
           const SizedBox(height: 16),
 
-          // كارد الباركود الخلفي
           Container(
             width: 160,
             height: 160,
@@ -91,7 +89,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
 
           const SizedBox(height: 16),
 
-          // صندوق رقم الحساب
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class MyBalancePage extends StatefulWidget {
   const MyBalancePage({super.key});
@@ -22,7 +22,6 @@ class _MyBalancePageState extends State<MyBalancePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
 

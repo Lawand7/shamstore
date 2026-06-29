@@ -25,37 +25,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  final List<String> _categories = ['Electronics', 'Clothing', 'Shoes', 'Books', 'Furniture', 'Sports'];
 
+  final List<String> _categoryKeys = [
+    'cat_electronics', 'cat_clothing', 'cat_shoes', 'cat_books', 'cat_furniture', 'cat_sports'
+  ];
+
+  // البيانات التجريبية بقيت كما هي ويُفضل مستقبلاً جلبها من الـ API لتكون مترجمة تلقائياً
   final List<Map<String, dynamic>> _ads = [
-    {
-      'title': 'Professional Photographer',
-      'desc': 'Events & Weddings Photography',
-      'city': 'Damascus',
-      'icon': Icons.camera_alt_outlined,
-      'color': const Color(0xFF0F4C8A)
-    },
-    {
-      'title': 'Private Tutor',
-      'desc': 'Math & Physics',
-      'city': 'Aleppo',
-      'icon': Icons.school_outlined,
-      'color': const Color(0xFF059669)
-    },
-    {
-      'title': 'Home Electrician',
-      'desc': 'Maintenance & Installation',
-      'city': 'Homs',
-      'icon': Icons.electrical_services_outlined,
-      'color': const Color(0xFFF59E0B)
-    },
-    {
-      'title': 'Furniture Moving',
-      'desc': 'Affordable Prices',
-      'city': 'Damascus',
-      'icon': Icons.local_shipping_outlined,
-      'color': const Color(0xFF7C3AED)
-    },
+    {'title': 'Professional Photographer', 'desc': 'Events & Weddings Photography', 'city': 'Damascus', 'icon': Icons.camera_alt_outlined, 'color': const Color(0xFF0F4C8A)},
+    {'title': 'Private Tutor', 'desc': 'Math & Physics', 'city': 'Aleppo', 'icon': Icons.school_outlined, 'color': const Color(0xFF059669)},
+    { 'title': 'Home Electrician', 'desc': 'Maintenance & Installation', 'city': 'Homs', 'icon': Icons.electrical_services_outlined, 'color': const Color(0xFFF59E0B)},
+    {'title': 'Furniture Moving', 'desc': 'Affordable Prices', 'city': 'Damascus', 'icon': Icons.local_shipping_outlined, 'color': const Color(0xFF7C3AED)},
   ];
 
   final List<Map<String, dynamic>> _products = [
@@ -67,7 +47,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً لتوجيه ألوان الواجهة كاملة
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -122,7 +101,6 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              // 1. الإشعارات: تظهر عند الاثنين (بائع وشاري)
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -132,8 +110,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: _iconButton(Icons.notifications_none_outlined, badge: '3'),
               ),
-
-              const SizedBox(width: 8), // المسافة التي طلبتها
+              const SizedBox(width: 8),
               widget.isBuyer
                   ? GestureDetector(
                 onTap: () => Navigator.push(
@@ -192,10 +169,15 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                !widget.isBuyer ? 'Seller Dashboard 🏪' : 'Hello 👋',
+                !widget.isBuyer
+                    ? AppLocalizations.of(context).translate('seller_dashboard')
+                    : AppLocalizations.of(context).translate('hello'),
                 style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12),
               ),
-              const Text('Abdullah', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(
+                  AppLocalizations.of(context).translate('user_name'),
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)
+              ),
             ],
           ),
           const SizedBox(width: 10),
@@ -258,7 +240,7 @@ class _HomePageState extends State<HomePage> {
               Icon(Icons.search, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 22),
               const Spacer(),
               Text(
-                'Search for a product or category...',
+                AppLocalizations.of(context).translate('search_hint'),
                 style: TextStyle(color: isDarkMode ? AppTheme.textSecondary.withOpacity(0.6) : AppTheme.textLight, fontSize: 13),
               ),
             ],
@@ -288,7 +270,10 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                child: Text('View All', style: TextStyle(color: activePrimary, fontSize: 12)),
+                child: Text(
+                    AppLocalizations.of(context).translate('view_all'),
+                    style: TextStyle(color: activePrimary, fontSize: 12)
+                ),
               ),
               const Spacer(),
               GestureDetector(
@@ -311,7 +296,7 @@ class _HomePageState extends State<HomePage> {
                       Icon(Icons.add_circle_outline_rounded, color: activePrimary, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        AppLocalizations.of(context).translate('Add'),
+                        AppLocalizations.of(context).translate('add'),
                         style: TextStyle(color: activePrimary, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -320,7 +305,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const Spacer(),
               Text(
-                'Service Ads',
+                AppLocalizations.of(context).translate('service_ads'),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
               ),
             ],
@@ -331,13 +316,12 @@ class _HomePageState extends State<HomePage> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            reverse: true,
+            reverse: _isArabic(),
             itemCount: _ads.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final ad = _ads[index];
               final Color originalAdColor = ad['color'] as Color;
-              // تفتيح الأيقونات في الدارك مود لتجنب عتمة التصنيفات
               final Color adFinalColor = isDarkMode ? Color.lerp(originalAdColor, Colors.white, 0.35)! : originalAdColor;
 
               return Container(
@@ -353,13 +337,12 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                        crossAxisAlignment: _isArabic() ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             ad['title'],
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                            textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -367,17 +350,16 @@ class _HomePageState extends State<HomePage> {
                           Text(
                             ad['desc'],
                             style: TextStyle(fontSize: 10, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
-                            textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: _isArabic() ? MainAxisAlignment.end : MainAxisAlignment.start,
                             children: [
+                              if (!_isArabic()) Icon(Icons.location_on, size: 11, color: adFinalColor),
                               Text(ad['city'], style: TextStyle(fontSize: 10, color: adFinalColor)),
-                              const SizedBox(width: 2),
-                              Icon(Icons.location_on, size: 11, color: adFinalColor),
+                              if (_isArabic()) Icon(Icons.location_on, size: 11, color: adFinalColor),
                             ],
                           ),
                         ],
@@ -410,8 +392,8 @@ class _HomePageState extends State<HomePage> {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          reverse: true,
-          itemCount: _categories.length,
+          reverse: _isArabic(),
+          itemCount: _categoryKeys.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
             return GestureDetector(
@@ -424,7 +406,7 @@ class _HomePageState extends State<HomePage> {
                   border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border),
                 ),
                 child: Text(
-                  _categories[index],
+                  AppLocalizations.of(context).translate(_categoryKeys[index]),
                   style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
                 ),
               ),
@@ -444,10 +426,13 @@ class _HomePageState extends State<HomePage> {
           TextButton(
             onPressed: () {},
             style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-            child: Text('View All', style: TextStyle(color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, fontSize: 12)),
+            child: Text(
+                AppLocalizations.of(context).translate('view_all'),
+                style: TextStyle(color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, fontSize: 12)
+            ),
           ),
           Text(
-            'Featured Products',
+            AppLocalizations.of(context).translate('featured_products'),
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
           ),
         ],
@@ -463,9 +448,7 @@ class _HomePageState extends State<HomePage> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailsPage(product: product),
-            ),
+            MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product)),
           );
         },
         child: Container(
@@ -477,11 +460,9 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Stack(
             children: [
-              // تغليف المحتوى الإجمالي بـ Column
               Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: _isArabic() ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  // 1️⃣ تقليص طول وعاء الصورة من 110 إلى 95 ليعطي مساحة تنفس للنصوص بالأسفل 📐
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Container(
@@ -492,46 +473,61 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  // 2️⃣ تغليف منطقة البيانات بـ Expanded لتأخذ باقي المساحة المتاحة هندسياً دون زيادة أو نقصان
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), // تقليص الحواف الداخلية رأساً
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween, // توزيع مرن للمكونات العمودية
+                        crossAxisAlignment: _isArabic() ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             product['name'],
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
                           ),
 
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: _isArabic() ? MainAxisAlignment.end : MainAxisAlignment.start,
                             children: [
-                              Expanded( // لضمان عدم حدوث overflow إذا كان اسم المدينة طويلاً
+                              if (!_isArabic()) Icon(Icons.location_on, size: 11, color: activePrimary),
+                              Expanded(
                                 child: Text(
                                   product['city'],
                                   style: TextStyle(fontSize: 10, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
-                                  textAlign: TextAlign.right,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
+                                  textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
                                 ),
                               ),
-                              const SizedBox(width: 2),
-                              Icon(Icons.location_on, size: 11, color: activePrimary),
+                              if (_isArabic()) Icon(Icons.location_on, size: 11, color: activePrimary),
                             ],
                           ),
 
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: _isArabic() ? MainAxisAlignment.end : MainAxisAlignment.start,
                             children: [
-                              Text('(${product['sold']})', style: TextStyle(fontSize: 9, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight)),
-                              const SizedBox(width: 3),
-                              Text(product['rating'].toString(), style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.w600)),
-                              const Icon(Icons.star, size: 11, color: Colors.orange),
+                              if (!_isArabic()) const Icon(Icons.star, size: 11, color: Colors.orange),
+                              if (!_isArabic()) const SizedBox(width: 3),
+
+                              Text(
+                                  product['sellerRating'].toString(),
+                                  style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.w600)
+                              ),
+                              const SizedBox(width: 5),
+
+                              Expanded(
+                                child: Text(
+                                  product['sellerName'] ?? '',
+                                  style: TextStyle(fontSize: 10, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
+                                ),
+                              ),
+
+                              if (_isArabic()) const SizedBox(width: 3),
+                              if (_isArabic()) const Icon(Icons.star, size: 11, color: Colors.orange),
                             ],
                           ),
 
@@ -541,7 +537,7 @@ class _HomePageState extends State<HomePage> {
                               GestureDetector(
                                 onTap: () {},
                                 child: Container(
-                                  width: 28, height: 28, // تصغير متناسق لحجم زر السلة
+                                  width: 28, height: 28,
                                   decoration: BoxDecoration(
                                     color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
                                     borderRadius: BorderRadius.circular(8),
@@ -553,9 +549,12 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                               ),
-                              Text(
-                                product['price'],
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: activePrimary),
+                              Row(
+                                children: [
+                                  if (!_isArabic()) Text(product['price'], style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: activePrimary)),
+                                  Text(' ${AppLocalizations.of(context).translate('currency')} ', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  if (_isArabic()) Text(product['price'], style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: activePrimary)),
+                                ],
                               ),
                             ],
                           ),
@@ -566,7 +565,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
 
-              // أيقونة المفضلة العائمة
               Positioned(
                 top: 8, left: 8,
                 child: GestureDetector(
@@ -585,21 +583,21 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ));
-    }
+  }
 
   Widget _buildBottomNav(bool isDarkMode) {
     final List<Map<String, dynamic>> buyerItems = [
-      {'icon': Icons.store_outlined, 'activeIcon': Icons.store, 'label': 'Store'},
-      {'icon': Icons.favorite_border, 'activeIcon': Icons.favorite, 'label': 'Favorites'},
-      {'icon': Icons.receipt_long_outlined, 'activeIcon': Icons.receipt_long, 'label': 'My Orders'},
-      {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'label': 'Settings'},
+      {'icon': Icons.store_outlined, 'activeIcon': Icons.store, 'labelKey': 'nav_store'},
+      {'icon': Icons.favorite_border, 'activeIcon': Icons.favorite, 'labelKey': 'nav_favorites'},
+      {'icon': Icons.receipt_long_outlined, 'activeIcon': Icons.receipt_long, 'labelKey': 'nav_orders'},
+      {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'labelKey': 'nav_profile'},
     ];
 
     final List<Map<String, dynamic>> sellerItems = [
-      {'icon': Icons.store_outlined, 'activeIcon': Icons.store, 'label': 'Store'},
-      {'icon': Icons.inventory_2_outlined, 'activeIcon': Icons.inventory_2, 'label': 'Products'},
-      {'icon': Icons.account_balance_wallet_outlined, 'activeIcon': Icons.account_balance_wallet, 'label': 'Balance'},
-      {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'label': 'Settings'},
+      {'icon': Icons.store_outlined, 'activeIcon': Icons.store, 'labelKey': 'nav_store'},
+      {'icon': Icons.inventory_2_outlined, 'activeIcon': Icons.inventory_2, 'labelKey': 'nav_products'},
+      {'icon': Icons.account_balance_wallet_outlined, 'activeIcon': Icons.account_balance_wallet, 'labelKey': 'nav_balance'},
+      {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'labelKey': 'nav_profile'},
     ];
 
     final items = widget.isBuyer ? buyerItems : sellerItems;
@@ -660,7 +658,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    items[index]['label'],
+                    AppLocalizations.of(context).translate(items[index]['labelKey']),
                     style: TextStyle(
                       fontSize: 10,
                       color: isActive ? activeColor : (isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
@@ -675,4 +673,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  bool _isArabic() => Localizations.localeOf(context).languageCode == 'ar';
 }

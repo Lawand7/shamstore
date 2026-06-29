@@ -13,15 +13,12 @@ class AddAdPage extends StatefulWidget {
 class _AddAdPageState extends State<AddAdPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // حقول التحكم بالمتغيرات النصية للاعلان
   final _adTitleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  // المحافظة المحددة من القائمة
   String? _selectedGovernorate;
   bool _isPaid = false;
-  // قائمة المحافظات المتاحة للاختيار (تظل برمجية ثابتة وتُترجم ظاهرياً عند العرض)
   final List<String> _governorates = [
     'دمشق', 'ريف دمشق', 'حلب', 'حمص', 'حماة', 'اللاذقية',
     'طرطوس', 'إدلب', 'دير الزور', 'الرقة', 'الحسكة', 'درعا', 'السويداء', 'القنيطرة'
@@ -37,7 +34,6 @@ class _AddAdPageState extends State<AddAdPage> {
 
   void _submitAd() {
     if (_formKey.currentState!.validate()) {
-      // منطق رفع بيانات الإعلان إلى السيرفر
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -54,7 +50,6 @@ class _AddAdPageState extends State<AddAdPage> {
   @override
   Widget build(BuildContext context) {
     final bool isArabic = _isArabic();
-    // 💡 فحص حالة الدارك مود الحالية بالتطبيق ديناميكياً
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -85,7 +80,6 @@ class _AddAdPageState extends State<AddAdPage> {
             child: Column(
               crossAxisAlignment: isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                // 1️⃣ عنوان الإعلان أو الخدمة
                 _buildLabel(AppLocalizations.of(context).translate('Ad Title Label'), isDarkMode),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -97,7 +91,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // 2️⃣ قائمة المحافظات
                 _buildLabel(AppLocalizations.of(context).translate('Governorate Label'), isDarkMode),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -124,7 +117,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // 3️⃣ رقم الهاتف
                 _buildLabel(AppLocalizations.of(context).translate('Phone Number Label'), isDarkMode),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -143,7 +135,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // 4️⃣ وصف الإعلان
                 _buildLabel(AppLocalizations.of(context).translate('Ad Description Label'), isDarkMode),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -156,7 +147,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
                 const SizedBox(height: 32),
 
-                // 5️⃣ كارد دفع الرسوم المتفاعل هندسياً
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12.0),
                   child: Container(
@@ -216,7 +206,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
                 const SizedBox(height: 32),
 
-                // 6️⃣ 🚀 زر نشر الإعلان
                 SizedBox(
                   width: double.infinity,
                   height: 48,
