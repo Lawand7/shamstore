@@ -3,8 +3,25 @@ import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/category_products.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
-class SearchPage extends StatelessWidget {
+class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
+
+  @override
+  State<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  // متغيرات الفلترة والبحث
+  String _searchQuery = '';
+  double? _minPrice;
+  double? _maxPrice;
+  String _selectedGovernorate = 'الكل';
+
+  final List<String> _governorates = [
+    'الكل', 'Damascus', 'Aleppo', 'Homs', 'Hama', 'Latakia',
+    'Tartus', 'Deir ez-Zor', 'Al-Hasakah', 'Raqqa',
+    'Daraa', 'Sweida', 'Quneitra', 'Idlib',
+  ];
 
   final List<Map<String, dynamic>> _allCategories = const [
     {'name': 'ملابس', 'icon': Icons.checkroom_rounded, 'color': Color(0xFF0F4C8A)},
@@ -18,6 +35,154 @@ class SearchPage extends StatelessWidget {
     {'name': 'أدوات منزلية', 'icon': Icons.blender_rounded, 'color': Color(0xFF0D9488)},
     {'name': 'ألعاب', 'icon': Icons.videogame_asset_rounded, 'color': Color(0xFFEA580C)},
   ];
+
+  // دالة لفتح نافذة الفلترة المنبثقة (BottomSheet)
+  void _showFilterBottomSheet(bool isDarkMode) {
+    final minController = TextEditingController(text: _minPrice?.toString() ?? '');
+    final maxController = TextEditingController(text: _maxPrice?.toString() ?? '');
+    String tempGov = _selectedGovernorate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDarkMode ? AppTheme.cardBackground : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20, left: 20, right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    AppLocalizations.of(context).translate('Filter Title'),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // فلتر السعر (تقريبي حد أدنى وأعلى)
+                  Text(
+                    AppLocalizations.of(context).translate('Price Range Label'),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _dialogField(minController, AppLocalizations.of(context).translate('Min Price Hint'), isDarkMode),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _dialogField(maxController, AppLocalizations.of(context).translate('Max Price Hint'), isDarkMode),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // فلتر المحافظة
+                  Text(
+                    AppLocalizations.of(context).translate('Governorate'),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: tempGov,
+                    dropdownColor: isDarkMode ? AppTheme.cardBackground : Colors.white,
+                    style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    items: _governorates.map((gov) => DropdownMenuItem(
+                      value: gov,
+                      child: Text(gov == 'الكل' ? AppLocalizations.of(context).translate('All Tab') : AppLocalizations.of(context).translate(gov)),
+                    )).toList(),
+                    onChanged: (val) => setModalState(() => tempGov = val!),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // أزرار التحكم بالفلتر
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _minPrice = null;
+                              _maxPrice = null;
+                              _selectedGovernorate = 'الكل';
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text(AppLocalizations.of(context).translate('Reset Filter'), style: const TextStyle(color: AppTheme.error)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _minPrice = double.tryParse(minController.text);
+                              _maxPrice = double.tryParse(maxController.text);
+                              _selectedGovernorate = tempGov;
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context).translate('Apply Filter'),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _dialogField(TextEditingController controller, String hint, bool isDarkMode) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 13),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary.withOpacity(0.5) : AppTheme.textLight, fontSize: 12),
+        filled: true,
+        fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,31 +212,52 @@ class SearchPage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // 🔍 شريط البحث + أيقونة الفلترة المتقدمة بجانبه
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              textAlign: isArabic ? TextAlign.right : TextAlign.left,
-              style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context).translate('Search hint text'),
-                hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary.withOpacity(0.5) : AppTheme.textLight, fontSize: 14),
-                prefixIcon: Icon(Icons.search, color: activePrimary),
-                filled: true,
-                fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                    style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context).translate('Search hint text'),
+                      hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary.withOpacity(0.5) : AppTheme.textLight, fontSize: 14),
+                      prefixIcon: Icon(Icons.search, color: activePrimary),
+                      filled: true,
+                      fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.white,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5),
+                      ),
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _showFilterBottomSheet(isDarkMode),
+                  child: Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5),
-                ),
-              ),
+              ],
             ),
           ),
 
@@ -100,6 +286,11 @@ class SearchPage extends StatelessWidget {
                 if (category['name'] == 'أدوات منزلية') displayCategoryName = AppLocalizations.of(context).translate('Housewares');
                 if (category['name'] == 'ألعاب') displayCategoryName = AppLocalizations.of(context).translate('Games');
 
+                // تصفية التصنيفات بناءً على نص البحث المكتوب إن وُجد
+                if (_searchQuery.isNotEmpty && !displayCategoryName.toLowerCase().contains(_searchQuery.toLowerCase())) {
+                  return const SizedBox.shrink();
+                }
+
                 final Color categoryColor = category['color'] as Color;
                 final Color finalIconColor = isDarkMode ? Color.lerp(categoryColor, Colors.white, 0.3)! : categoryColor;
 
@@ -109,14 +300,20 @@ class SearchPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => CategoryProductsScreen(categoryName: cleanedName),
+                        builder: (_) => CategoryProductsScreen(
+                          categoryName: cleanedName,
+                          searchQuery: _searchQuery,
+                          minPrice: _minPrice,
+                          maxPrice: _maxPrice,
+                          governorate: _selectedGovernorate,
+                        ),
                       ),
                     );
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+                      color: isDarkMode ? AppTheme.cardBackground : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border),
                       boxShadow: [
