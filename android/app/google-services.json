@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409028432262",
+    "project_id": "ecommerce-71257",
+    "storage_bucket": "ecommerce-71257.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409028432262:android:255e140e0b00ec8e131c07",
+        "android_client_info": {
+          "package_name": "com.example.shamstore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH-Vr_Zzx0wu0x0egJp8BPerwz7e4vMT4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

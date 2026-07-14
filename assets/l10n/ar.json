@@ -22,7 +22,6 @@
   "register_btn": "تسجيل الحساب",
   "already_have_account": "لديك حساب بالفعل؟",
   "login_now": "سجّل الدخول الآن",
-
   "Create Account": "إنشاء حساب",
   "Profile Picture": "الصورة الشخصية",
   "Tap to change photo": "اضغط لتغيير الصورة",
@@ -53,14 +52,16 @@
   "Homs": "حمص",
   "Hama": "حماة",
   "Latakia": "اللاذقية",
-  "Tartus": "طرطوس",
-  "Deir ez-Zor": "دير الزور",
-  "Al-Hasakah": "الحسكة",
+  "Tartous": "طرطوس",
+  "Deir el-Zor": "دير الزور",
+  "Hasakah": "الحسكة",
   "Raqqa": "الرقة",
   "Daraa": "درعا",
-  "Sweida": "السويداء",
+  "Suwayda": "السويداء",
   "Quneitra": "القنيطرة",
   "Idlib": "إدلب",
+  "Rif Dimashq": "ريف دمشق",
+  "Sign Up": "إنشاء حساب",
   "Verify Your Account": "تأكيد حسابك",
   "Enter Verification Code": "أدخل رمز التأكيد",
   "We sent a 6-digit code to your phone": "لقد أرسلنا رمزاً مكوناً من 6 أرقام إلى هاتفك",
@@ -71,7 +72,6 @@
   "Wrong number? ": "رقم خاطئ؟ ",
   "Change it": "تغييره",
   "Skip": "تخطي",
-
   "About App": "عن التطبيق",
   "Your integrated platform for shopping and services": "منصتك المتكاملة للتسوق والخدمات",
   "ShamStore description text": "شام ستور (ShamStore) هو تطبيق تجارة إلكترونية متطور مصمم خصيصاً ليوفر لك تجربة تسوق فريدة ومريحة. يجمع التطبيق بين أحدث صيحات الموضة والملابس، وأحدث الأجهزة الإلكترونية، بالإضافة إلى قسم خاص ومبتكر للإعلانات الخدمية التي تسهل حياتك اليومية وتلبي احتياجاتك في مكان واحد وبواجهات عصرية سهلة الاستخدام.",
@@ -82,7 +82,6 @@
   "Continuous technical support to solve problems and follow up reports": "دعم فني متواصل لحل المشاكل ومتابعة البلاغات",
   "Version": "الإصدار",
   "All rights reserved © 2026": "جميع الحقوق محفوظة © 2026",
-
   "Add Product": "إضافة منتج",
   "Image Selected": "تم اختيار الصورة",
   "Tap to change": "اضغط للتغيير",
@@ -106,7 +105,6 @@
   "Supplies": "مستلزمات",
   "Household": "أدوات منزلية",
   "Toys": "ألعاب",
-
   "My Orders": "طلباتي",
   "SP": "ل.س",
   "Delivered": "تم التوصيل",
@@ -126,14 +124,12 @@
   "Please select at least one star": "الرجاء اختيار نجمة واحدة على الأقل",
   "Thanks for rating": "شكرًا لتقييمك! حصل المنتج على",
   "Confirm": "تأكيد",
-
   "Account Recovery": "استعادة الحساب",
   "Forgot Password?": "هل نسيت كلمة السر؟",
   "Forgot password description": "أدخل بريدك الإلكتروني المرتبط بحسابك وسنقوم بإرسال رمز التحقق OTP لإعادة تعيين كلمة المرور.",
   "Email Address": "البريد الإلكتروني",
   "Send Button": "إرسال",
   "Temporary Skip": "تخطي مؤقت (للتجريب)",
-
   "Set Password Title": "تعيين كلمة السر",
   "Reset Password Header": "إعادة تعيين كلمة المرور",
   "Reset password instructions": "الرجاء إدخال الرمز المرسل وتعيين كلمة السر الجديدة لجهازك.",
@@ -144,7 +140,6 @@
   "Retype password hint": "أعد كتابة كلمة السر لتأكيدها",
   "Password changed successfully notice": "تم تغيير كلمة المرور بنجاح!",
   "Save Password Button": "حفظ كلمة السر",
-
   "My Balance": "رصيدي ومبيعاتي",
   "Available Balance": "الرصيد المتاح",
   "SP": "ل.س",
@@ -164,7 +159,6 @@
   "Balance Nav": "الرصيد",
   "Orders Nav": "الطلبات",
   "Settings Nav": "الإعدادات",
-
   "My Products": "منتجاتي",
   "Published Stat": "منشور",
   "Unpublished Stat": "غير منشور",
@@ -180,7 +174,6 @@
   "Edit Action": "تعديل",
   "Hide Action": "إخفاء",
   "Publish Action": "نشر",
-
   "Product Details": "تفاصيل المنتج",
   "SP": "ل.س",
   "sold": "تم بيعها",
@@ -188,7 +181,6 @@
   "Product Description Body": "هذا المنتج متاح بجودة عالية وممتازة للتسليم الفوري داخل المنطقة، مع إمكانية الفحص والمعاينة قبل الاستلام والدفع عند الرضا التام.",
   "Added to cart successfully message": "تم إضافته إلى السلة بنجاح",
   "Add to Cart Button": "إضافة إلى السلة",
-
   "Browse Categories": "تصفح التصنيفات",
   "Search hint text": "ابحث عن منتج محدد...",
   "Clothes": "ملابس",
@@ -201,7 +193,6 @@
   "Cosmetics": "مستحضرات\nتجميل",
   "Housewares": "أدوات منزلية",
   "Games": "ألعاب",
-
   "Add Ad Title": "إضافة إعلان أو خدمة",
   "Ad Title Label": "عنوان الإعلان أو الخدمة",
   "Ad Title Hint": "مثال: صيانة أجهزة كهربائية، توصيل طلبات...",
@@ -218,7 +209,6 @@
   "delete_action": "حذف",
   "edit_action": "تعديل",
   "add": "إضافة",
-
   "seller_dashboard": "لوحة التحكم للبائع 🏪",
   "hello": "مرحباً بك 👋",
   "user_name": "عبد الله",
@@ -228,21 +218,18 @@
   "featured_products": "منتجات مميزة",
   "currency": "ل.س",
   "sold_count": "مبيع",
-
   "nav_store": "المتجر",
   "nav_favorites": "المفضلة",
   "nav_orders": "طلباتي",
   "nav_profile": "حسابي",
   "nav_products": "منتجاتي",
   "nav_balance": "الرصيد",
-
   "cat_electronics": "إلكترونيات",
   "cat_clothing": "ملابس",
   "cat_shoes": "أحذية",
   "cat_books": "كتب",
   "cat_furniture": "أثاث",
   "cat_sports": "رياضة",
-
   "Ad published successfully": "تم نشر الإعلان بنجاح",
   "Ad Fee Required": "رسوم نشر الإعلان:",
   "Publish Ad Button": "نشر الإعلان الآن",
@@ -267,10 +254,8 @@
   "Mark all as read tooltip": "تحديد الكل كمقروء",
   "No new notifications": "لا توجد إشعارات جديدة",
   "Notifications placeholder description": "عندما تتلقى إشعارات جديدة ستظهر هنا",
-
   "Enter Security PIN": "أدخل رمز الأمان الخاص بك",
   "Enter PIN Description": "يرجى إدخال رمز الأمان المكون من 4 أرقام للوصول إلى محفظتك المالية",
-
   "Shopping Cart": "سلة التسوق",
   "Delivery Details": "تفاصيل التوصيل",
   "Phone Number": "رقم الهاتف",
@@ -279,7 +264,6 @@
   "SP": "ل.س",
   "Order Success Notice": "تم إرسال الطلب إلى البائع بنجاح!",
   "Confirm Order": "تأكيد الطلب",
-
   "product_details_title": "تفاصيل المنتج",
   "currency_sp": "ل.س",
   "sold_suffix": "مبيع",
@@ -304,7 +288,6 @@
   "Syrian Pound": "ليرة سورية",
   "Charge Wallet": "شحن المحفظة",
   "Recent Transactions": "العمليات الأخيرة",
-
   "Verify Your Account": "تأكيد حسابك",
   "Enter Verification Code": "أدخل رمز التحقق",
   "We sent a 6-digit code to your phone": "لقد أرسلنا رمزاً مكوناً من 6 أرقام إلى هاتفك",
@@ -315,10 +298,8 @@
   "Wrong number? ": "رقم الهاتف خاطئ؟ ",
   "Change it": "تغييره",
   "Skip": "تخطّي",
-
   "Enter Security PIN": "أدخل رمز الـ PIN",
   "Please enter the 4-digit security code to access your wallet": "يرجى إدخال رمز الأمان المكون من 4 أرقام للوصول إلى محفظتك",
-
   "my_balance_title": "مستحقاتي",
   "available_balance": "الرصيد المتاح للسحب",
   "currency_sp": "ل.س",
@@ -337,7 +318,6 @@
   "nav_balance": "مستحقاتي",
   "nav_orders": "الطلبات",
   "nav_settings": "الإعدادات",
-
   "Shopping Cart": "سلة التسوق",
   "Delete": "حذف",
   "Pay": "دفع",
@@ -348,21 +328,17 @@
   "Total": "الإجمالي",
   "Checkout All": "شراء الكل",
   "Your cart is empty": "سلة التسوق فارغة",
-
   "Available products in section": "المنتجات المتوفرة في قسم ",
   "Featured Demo Product": "منتج تجريبي مميز",
   "This product is currently available for demo display inside the section at a competitive price": "هذا المنتج متاح للعرض التجريبي داخل القسم حالياً وبسعر منافس",
   "SYP": "ل.س",
   "More products will be listed soon...": "سيتم إدراج باقي المنتجات قريباً...",
-
   "rate_seller": "تقييم البائع",
   "please_select_star": "الرجاء اختيار نجمة واحدة على الأقل",
   "thanks_for_rating_seller": "شكراً لتقييمك البائع بـ",
-
   "settings": "الإعدادات",
   "app_language": "لغة التطبيق",
   "dark_mode": "الوضع الداكن",
-
   "support_title": "التواصل مع الدعم",
   "issue_type_label": "نوع المشكلة أو البلاغ:",
   "issue_details_label": "ما هي مشكلتك؟ بالتفصيل:",
@@ -370,13 +346,11 @@
   "btn_send_support": "إرسال للدعم",
   "error_empty_msg": "الرجاء كتابة تفاصيل المشكلة أولاً",
   "success_msg": "تم إرسال بلاغك بنجاح، سيتواصل معك الدعم قريباً",
-
   "type_tech": "مشكلة تقنية",
   "type_report": "التبليغ عن منتج / إعلان مخادع",
   "type_payment": "مشكلة في الدفع أو الرصيد",
   "type_suggestion": "اقتراح لتطوير التطبيق",
   "type_other": "أخرى",
-
   "Seller": "بائع",
   "Buyer": "مشتري",
   "Save Changes": "حفظ التغييرات",
@@ -397,7 +371,4 @@
   "Logout Confirm Message": "هل أنت متأكد أنك تريد تسجيل الخروج من الحساب؟",
   "No": "لا",
   "Yes": "نعم"
-
-
-
 }

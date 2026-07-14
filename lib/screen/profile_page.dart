@@ -1,16 +1,25 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import 'package:shamstore/core/constants/api_constants.dart';
+import 'package:shamstore/core/storage/token_storage.dart';
+import 'package:shamstore/features/auth/controllers/logout_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/screen/login_page.dart';
 import 'package:shamstore/screen/about_app_page.dart';
 import 'package:shamstore/screen/settings_page.dart';
-import 'package:shamstore/screen/forgot_password_screen.dart';
 import 'package:shamstore/screen/my_ads_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/screen/support_page.dart';
+import 'package:shamstore/screen/security_settings_page.dart';
+import 'package:shamstore/screen/edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool isBuyer;
+
   const ProfilePage({super.key, this.isBuyer = true});
 
   @override
@@ -18,40 +27,194 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _isEditing = false;
+  late final LogoutController _logoutController;
 
-  final _nameController = TextEditingController(text: 'Abdullah Atmah');
-  final _phoneController = TextEditingController(text: '0946500838');
-  final _passwordController = TextEditingController(text: '');
+  String _firstName = '';
+  String _lastName = '';
+  String _selectedGovernorate = '';
+  String _dateOfBirth = '';
 
-  // 🛠️ تم إصلاح الخطأ الإملائي هنا لتتوافق مع خيارات الـ Dropdown وتختفي الشاشة الحمراء
-  String _selectedGovernorate = 'Daraa';
   String? _profileImagePath;
+  String? _profileImageUrl;
 
-  bool _obscurePassword = true;
+  String get _fullName => '${_firstName.trim()} ${_lastName.trim()}'.trim();
 
-  final List<String> _governorates = [
-    'Damascus',
-    'Aleppo',
-    'Homs',
-    'Hama',
-    'Latakia',
-    'Tartus',
-    'Deir ez-Zor',
-    'Al-Hasakah',
-    'Raqqa',
-    'Daraa',
-    'Sweida',
-    'Quneitra',
-    'Idlib',
-  ];
+  String get _email {
+    final email = TokenStorage.getUserEmail();
+    if (email == null || email.trim().isEmpty) {
+      return 'غير متوفر';
+    }
+    return email;
+  }
+
+  String get _accountRole {
+    final role = TokenStorage.getUserRole();
+
+    if (role != null && role.trim().isNotEmpty) {
+      return role.trim().toLowerCase();
+    }
+
+    return widget.isBuyer ? 'buyer' : 'seller';
+  }
+
+  bool get _isSeller => _accountRole == 'seller';
+
+  String _accountTypeLabel(BuildContext context) {
+    if (_accountRole == 'seller') {
+      return AppLocalizations.of(context).translate('Seller');
+    }
+
+    return AppLocalizations.of(context).translate('Buyer');
+  }
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+
+    _logoutController = Get.isRegistered<LogoutController>()
+        ? Get.find<LogoutController>()
+        : Get.put(LogoutController());
+
+    _loadProfileFromStorage();
+  }
+
+  void _loadProfileFromStorage() {
+    _firstName = TokenStorage.getProfileFirstName() ?? '';
+    _lastName = TokenStorage.getProfileLastName() ?? '';
+    _selectedGovernorate = TokenStorage.getProfileGovernorate() ?? '';
+    _dateOfBirth = TokenStorage.getProfileDateOfBirth() ?? '';
+    _profileImageUrl = _normalizeProfileImageUrl(
+      TokenStorage.getProfileImageUrl(),
+    );
+  }
+
+  String? _normalizeProfileImageUrl(String? rawUrl) {
+    if (rawUrl == null || rawUrl.trim().isEmpty) return null;
+
+    final value = rawUrl.trim();
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+
+    final serverBaseUrl = ApiConstants.baseUrl.replaceFirst('/api', '');
+
+    if (value.startsWith('/storage/')) {
+      return '$serverBaseUrl$value';
+    }
+
+    if (value.startsWith('storage/')) {
+      return '$serverBaseUrl/$value';
+    }
+
+    return '$serverBaseUrl/storage/$value';
+  }
+
+  Future<void> _performLogout(BuildContext dialogContext) async {
+    final dialogNavigator = Navigator.of(dialogContext);
+    final pageNavigator = Navigator.of(context);
+
+    final localLogoutDone = await _logoutController.logout();
+
+    if (!mounted) return;
+
+    if (dialogNavigator.canPop()) {
+      dialogNavigator.pop();
+    }
+
+    if (!localLogoutDone) {
+      Get.snackbar(
+        'فشل تسجيل الخروج',
+        _logoutController.errorMessage.value.isNotEmpty
+            ? _logoutController.errorMessage.value
+            : 'تعذر حذف بيانات الجلسة من الجهاز',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    pageNavigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _openEditProfilePage() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(
+          initialFirstName: _firstName,
+          initialLastName: _lastName,
+          initialGovernorate: _selectedGovernorate.isNotEmpty
+              ? _selectedGovernorate
+              : 'Daraa',
+          initialDateOfBirth: _dateOfBirth.isNotEmpty
+              ? _dateOfBirth
+              : '2000-01-01',
+          initialProfileImagePath: _profileImagePath ?? _profileImageUrl,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    final firstName = result['first_name']?.toString() ?? _firstName;
+    final lastName = result['last_name']?.toString() ?? _lastName;
+    final dateOfBirth = result['date_of_birth']?.toString() ?? _dateOfBirth;
+    final governorate =
+        result['governorate']?.toString() ?? _selectedGovernorate;
+
+    final returnedLocalPath = result['profile_image_path']?.toString();
+    final returnedImageUrl = result['profile_image_url']?.toString();
+
+    await TokenStorage.saveProfileData(
+      firstName: firstName,
+      lastName: lastName,
+      dateOfBirth: dateOfBirth,
+      governorate: governorate,
+      profileImageUrl: returnedImageUrl,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _firstName = firstName;
+      _lastName = lastName;
+      _dateOfBirth = dateOfBirth;
+      _selectedGovernorate = governorate;
+
+      if (returnedLocalPath != null && returnedLocalPath.trim().isNotEmpty) {
+        _profileImagePath = returnedLocalPath;
+      }
+
+      if (returnedImageUrl != null && returnedImageUrl.trim().isNotEmpty) {
+        _profileImageUrl = _normalizeProfileImageUrl(returnedImageUrl);
+      }
+    });
+  }
+
+  bool _isLocalImagePath(String? path) {
+    if (path == null || path.trim().isEmpty) return false;
+
+    final value = path.trim();
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return false;
+    }
+
+    return File(value).existsSync();
+  }
+
+  bool _isNetworkImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+
+    final value = url.trim();
+    return value.startsWith('http://') || value.startsWith('https://');
+  }
+
+  String _safeValue(String value) {
+    return value.trim().isNotEmpty ? value.trim() : 'غير متوفر';
   }
 
   @override
@@ -71,11 +234,9 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _isEditing
-                      ? _buildEditForm(isDarkMode)
-                      : _buildInfoCard(isDarkMode),
+                  _buildInfoCard(isDarkMode),
                   const SizedBox(height: 16),
-                  if (!_isEditing) _buildMenuCard(isDarkMode),
+                  _buildMenuCard(isDarkMode),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -99,55 +260,22 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.only(top: 54, bottom: 28),
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 86,
-                height: 86,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.4),
-                    width: 2,
-                  ),
-                ),
-                child: _profileImagePath != null
-                    ? const Icon(Icons.person, size: 44, color: AppTheme.white)
-                    : const Icon(
-                        Icons.person_outline,
-                        size: 44,
-                        color: AppTheme.white,
-                      ),
+          Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.4),
+                width: 2,
               ),
-              if (_isEditing)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _profileImagePath = 'selected'),
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.camera_alt,
-                        color: isDarkMode
-                            ? AppTheme.topBottomBar
-                            : AppTheme.primary,
-                        size: 14,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+            ),
+            child: ClipOval(child: _buildProfileImage()),
           ),
           const SizedBox(height: 12),
           Text(
-            _nameController.text,
+            _fullName.isNotEmpty ? _fullName : 'غير متوفر',
             style: const TextStyle(
               color: AppTheme.white,
               fontSize: 18,
@@ -162,50 +290,34 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              !widget.isBuyer
-                  ? AppLocalizations.of(context).translate('Seller')
-                  : AppLocalizations.of(context).translate('Buyer'),
+              _accountTypeLabel(context),
               style: const TextStyle(color: AppTheme.white, fontSize: 12),
             ),
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => setState(() => _isEditing = !_isEditing),
+            onTap: _openEditProfilePage,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 9),
               decoration: BoxDecoration(
-                color: _isEditing
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.15),
+                color: Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withOpacity(0.4)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _isEditing ? Icons.check : Icons.edit_outlined,
+                  const Icon(
+                    Icons.edit_outlined,
                     size: 15,
-                    color: _isEditing
-                        ? (isDarkMode
-                              ? AppTheme.darkBackground
-                              : AppTheme.primary)
-                        : AppTheme.white,
+                    color: AppTheme.white,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    _isEditing
-                        ? AppLocalizations.of(context).translate('Save Changes')
-                        : AppLocalizations.of(
-                            context,
-                          ).translate('Edit Profile'),
-                    style: TextStyle(
+                    AppLocalizations.of(context).translate('Edit Profile'),
+                    style: const TextStyle(
                       fontSize: 13,
-                      color: _isEditing
-                          ? (isDarkMode
-                                ? AppTheme.darkBackground
-                                : AppTheme.primary)
-                          : AppTheme.white,
+                      color: AppTheme.white,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -216,6 +328,34 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Widget _buildProfileImage() {
+    if (_isLocalImagePath(_profileImagePath)) {
+      return Image.file(
+        File(_profileImagePath!),
+        fit: BoxFit.cover,
+        width: 92,
+        height: 92,
+        errorBuilder: (_, __, ___) => _defaultProfileIcon(),
+      );
+    }
+
+    if (_isNetworkImageUrl(_profileImageUrl)) {
+      return Image.network(
+        _profileImageUrl!,
+        fit: BoxFit.cover,
+        width: 92,
+        height: 92,
+        errorBuilder: (_, __, ___) => _defaultProfileIcon(),
+      );
+    }
+
+    return _defaultProfileIcon();
+  }
+
+  Widget _defaultProfileIcon() {
+    return const Icon(Icons.person_outline, size: 46, color: AppTheme.white);
   }
 
   Widget _buildInfoCard(bool isDarkMode) {
@@ -239,32 +379,35 @@ class _ProfilePageState extends State<ProfilePage> {
           _infoRow(
             Icons.person_outline,
             AppLocalizations.of(context).translate('Full Name'),
-            _nameController.text,
+            _fullName.isNotEmpty ? _fullName : 'غير متوفر',
             isDarkMode,
           ),
           _divider(isDarkMode),
           _infoRow(
-            Icons.phone_outlined,
-            AppLocalizations.of(context).translate('Phone Number'),
-            _phoneController.text,
+            Icons.email_outlined,
+            AppLocalizations.of(context).translate('Email Address'),
+            _email,
+            isDarkMode,
+          ),
+          _divider(isDarkMode),
+          _infoRow(
+            Icons.calendar_today_outlined,
+            'تاريخ الميلاد',
+            _safeValue(_dateOfBirth),
             isDarkMode,
           ),
           _divider(isDarkMode),
           _infoRow(
             Icons.location_on_outlined,
             AppLocalizations.of(context).translate('Governorate'),
-            AppLocalizations.of(context).translate(_selectedGovernorate),
+            _safeValue(_selectedGovernorate),
             isDarkMode,
           ),
           _divider(isDarkMode),
           _infoRow(
-            !widget.isBuyer
-                ? Icons.store_outlined
-                : Icons.shopping_bag_outlined,
+            _isSeller ? Icons.store_outlined : Icons.shopping_bag_outlined,
             AppLocalizations.of(context).translate('Account Type'),
-            !widget.isBuyer
-                ? AppLocalizations.of(context).translate('Seller')
-                : AppLocalizations.of(context).translate('Buyer'),
+            _accountTypeLabel(context),
             isDarkMode,
           ),
         ],
@@ -322,265 +465,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _divider(bool isDarkMode) => Divider(
-    height: 1,
-    color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
-    indent: 16,
-    endIndent: 16,
-  );
-
-  Widget _buildEditForm(bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode ? Colors.transparent : AppTheme.border,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context).translate('Edit Information'),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _editField(
-            AppLocalizations.of(context).translate('Full Name'),
-            Icons.person_outline,
-            _nameController,
-            isDarkMode,
-          ),
-          const SizedBox(height: 14),
-          _editField(
-            AppLocalizations.of(context).translate('Phone Number'),
-            Icons.phone_outlined,
-            _phoneController,
-            isDarkMode,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 14),
-          _buildGovernorateDropdown(isDarkMode),
-          const SizedBox(height: 14),
-          _editPasswordField(isDarkMode),
-        ],
-      ),
-    );
-  }
-
-  Widget _editField(
-    String label,
-    IconData icon,
-    TextEditingController controller,
-    bool isDarkMode, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    final Color activeColor = isDarkMode
-        ? AppTheme.accentBlue
-        : AppTheme.primary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: TextStyle(
-            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            fontSize: 14,
-          ),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: activeColor, size: 18),
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _editPasswordField(bool isDarkMode) {
-    final Color activeColor = isDarkMode
-        ? AppTheme.accentBlue
-        : AppTheme.primary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context).translate('New Password'),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          style: TextStyle(
-            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            fontSize: 14,
-          ),
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(
-              context,
-            ).translate('Leave empty to keep current'),
-            hintStyle: TextStyle(
-              fontSize: 12,
-              color: isDarkMode
-                  ? AppTheme.textSecondary.withOpacity(0.5)
-                  : AppTheme.textLight,
-            ),
-            prefixIcon: Icon(Icons.lock_outline, color: activeColor, size: 18),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
-                size: 18,
-              ),
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
-            ),
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGovernorateDropdown(bool isDarkMode) {
-    final Color activeColor = isDarkMode
-        ? AppTheme.accentBlue
-        : AppTheme.primary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context).translate('Governorate'),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
-          ),
-        ),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: _selectedGovernorate,
-          dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-          style: TextStyle(
-            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            fontSize: 13,
-          ),
-          decoration: InputDecoration(
-            prefixIcon: Icon(
-              Icons.location_on_outlined,
-              color: activeColor,
-              size: 18,
-            ),
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-              ),
-            ),
-          ),
-          items: _governorates
-              .map(
-                (gov) => DropdownMenuItem(
-                  value: gov,
-                  child: Text(
-                    AppLocalizations.of(context).translate(gov),
-                    style: TextStyle(
-                      color: isDarkMode
-                          ? AppTheme.textPrimary
-                          : AppTheme.textDark,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (val) => setState(() => _selectedGovernorate = val!),
-        ),
-      ],
+  Widget _divider(bool isDarkMode) {
+    return Divider(
+      height: 1,
+      color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
+      indent: 16,
+      endIndent: 16,
     );
   }
 
@@ -614,7 +504,6 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _divider(isDarkMode),
-
           _menuItem(
             AppLocalizations.of(context).translate('my_ads'),
             Icons.campaign_outlined,
@@ -627,7 +516,6 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _divider(isDarkMode),
-
           _menuItem(
             AppLocalizations.of(context).translate('Notifications'),
             Icons.notifications_none_outlined,
@@ -641,13 +529,13 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           _divider(isDarkMode),
           _menuItem(
-            AppLocalizations.of(context).translate('Change Password'),
-            Icons.lock_reset_outlined,
+            'إعدادات الأمان',
+            Icons.security_rounded,
             isDarkMode,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                MaterialPageRoute(builder: (_) => const SecuritySettingsPage()),
               );
             },
           ),
@@ -684,7 +572,8 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: () {
               showDialog(
                 context: context,
-                builder: (BuildContext context) {
+                barrierDismissible: false,
+                builder: (BuildContext dialogContext) {
                   return AlertDialog(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -694,7 +583,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         : AppTheme.white,
                     title: Text(
                       AppLocalizations.of(
-                        context,
+                        dialogContext,
                       ).translate('Logout Confirm Title'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -707,7 +596,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     content: Text(
                       AppLocalizations.of(
-                        context,
+                        dialogContext,
                       ).translate('Logout Confirm Message'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -719,48 +608,62 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     actionsAlignment: MainAxisAlignment.spaceBetween,
                     actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          AppLocalizations.of(context).translate('No'),
-                          style: TextStyle(
-                            color: isDarkMode
-                                ? AppTheme.textSecondary
-                                : AppTheme.textLight,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
+                      Obx(() {
+                        final isLoading = _logoutController.isLoading.value;
+
+                        return TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.pop(dialogContext),
+                          child: Text(
+                            AppLocalizations.of(dialogContext).translate('No'),
+                            style: TextStyle(
+                              color: isDarkMode
+                                  ? AppTheme.textSecondary
+                                  : AppTheme.textLight,
+                              fontSize: 13,
                             ),
-                            (route) => false,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 8,
+                        );
+                      }),
+                      Obx(() {
+                        final isLoading = _logoutController.isLoading.value;
+
+                        return ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => _performLogout(dialogContext),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.error,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 8,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).translate('Yes'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  AppLocalizations.of(
+                                    dialogContext,
+                                  ).translate('Yes'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        );
+                      }),
                     ],
                   );
                 },

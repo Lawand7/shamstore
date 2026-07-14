@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import 'package:shamstore/core/storage/token_storage.dart';
+import 'package:shamstore/features/auth/controllers/login_controller.dart';
 import 'package:shamstore/screen/create_account.dart';
 import 'package:shamstore/screen/home_page.dart';
 import 'package:shamstore/them/app_theme.dart';
@@ -14,10 +18,19 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
+  late final LoginController _loginController;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  bool _isBuyerSelected = true;
+  @override
+  void initState() {
+    super.initState();
+
+    _loginController = Get.isRegistered<LoginController>()
+        ? Get.find<LoginController>()
+        : Get.put(LoginController());
+  }
 
   @override
   void dispose() {
@@ -26,12 +39,28 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  bool _resolveIsBuyerFromSavedRole() {
+    final role = TokenStorage.getUserRole()?.trim().toLowerCase();
+
+    if (role == 'seller') {
+      return false;
+    }
+
+    if (role == 'customer' || role == 'buyer') {
+      return true;
+    }
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -75,20 +104,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-                AppLocalizations.of(context).translate('welcome_caps'),
-                style: TextStyle(
-                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                )
+              AppLocalizations.of(context).translate('welcome_caps'),
+              style: TextStyle(
+                color: isDarkMode ? AppTheme.textPrimary : AppTheme.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
-                AppLocalizations.of(context).translate('sign_in_desc'),
-                style: TextStyle(
-                  color: isDarkMode ? AppTheme.textSecondary : Colors.white60,
-                  fontSize: 13,
-                )
+              AppLocalizations.of(context).translate('sign_in_desc'),
+              style: TextStyle(
+                color: isDarkMode ? AppTheme.textSecondary : Colors.white60,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -108,16 +137,13 @@ class _LoginScreenState extends State<LoginScreen> {
               color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
               blurRadius: 20,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildRoleToggle(isDarkMode),
-            const SizedBox(height: 20),
-
             _buildField(
               label: AppLocalizations.of(context).translate('email_address'),
               hint: AppLocalizations.of(context).translate('enter_email'),
@@ -134,7 +160,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordScreen(),
+                    ),
                   );
                 },
                 child: Text(
@@ -153,72 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
             _buildCreateAccountButton(isDarkMode),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildRoleToggle(bool isDarkMode) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border),
-      ),
-      child: Row(
-        children: [
-          // خيار المشتري
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isBuyerSelected = true),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _isBuyerSelected
-                      ? (isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  AppLocalizations.of(context).translate('buyer_role'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: _isBuyerSelected
-                        ? AppTheme.white
-                        : (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // خيار البائع
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isBuyerSelected = false),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: !_isBuyerSelected
-                      ? (isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  AppLocalizations.of(context).translate('seller_role'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: !_isBuyerSelected
-                        ? AppTheme.white
-                        : (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -246,10 +208,14 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
+            hintStyle: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
             prefixIcon: Icon(
               icon,
               color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
@@ -258,15 +224,21 @@ class _LoginScreenState extends State<LoginScreen> {
             fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+              ),
             ),
           ),
         ),
@@ -279,42 +251,63 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-            AppLocalizations.of(context).translate('password'),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            )
+          AppLocalizations.of(context).translate('password'),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
           decoration: InputDecoration(
             hintText: AppLocalizations.of(context).translate('password'),
-            hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
-            prefixIcon: Icon(Icons.lock_outline, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
+            hintStyle: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+            prefixIcon: Icon(
+              Icons.lock_outline,
+              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                color: isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight,
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: isDarkMode
+                    ? AppTheme.iconUnselected
+                    : AppTheme.textLight,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
             ),
             filled: true,
             fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+              ),
             ),
           ),
         ),
@@ -323,47 +316,108 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginButton(bool isDarkMode) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomePage(isBuyer: _isBuyerSelected),
+    return Obx(() {
+      final bool isLoading = _loginController.isLoading.value;
+
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: isLoading
+              ? null
+              : () async {
+                  final email = _emailController.text.trim();
+                  final password = _passwordController.text.trim();
+
+                  if (email.isEmpty || password.isEmpty) {
+                    Get.snackbar(
+                      'تنبيه',
+                      'يرجى إدخال البريد الإلكتروني وكلمة المرور',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                    return;
+                  }
+
+                  final success = await _loginController.login(
+                    email: email,
+                    password: password,
+                  );
+
+                  if (!mounted) return;
+
+                  if (success) {
+                    final isBuyer = _resolveIsBuyerFromSavedRole();
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HomePage(isBuyer: isBuyer),
+                      ),
+                    );
+                  } else {
+                    Get.snackbar(
+                      'فشل تسجيل الدخول',
+                      _loginController.errorMessage.value.isNotEmpty
+                          ? _loginController.errorMessage.value
+                          : 'حدث خطأ أثناء تسجيل الدخول',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDarkMode
+                ? AppTheme.selectedBorder
+                : AppTheme.primary,
+            foregroundColor: AppTheme.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-          foregroundColor: AppTheme.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
+            elevation: 0,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  AppLocalizations.of(context).translate('login'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
         ),
-        child: Text(
-            AppLocalizations.of(context).translate('login'),
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)
-        ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildDivider(bool isDarkMode) {
     return Row(
       children: [
-        Expanded(child: Divider(color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border)),
+        Expanded(
+          child: Divider(
+            color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-              AppLocalizations.of(context).translate('or_continue'),
-              style: TextStyle(
-                color: isDarkMode ? AppTheme.textSecondary : Colors.grey[400],
-                fontSize: 12,
-              )
+            AppLocalizations.of(context).translate('or_continue'),
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : Colors.grey[400],
+              fontSize: 12,
+            ),
           ),
         ),
-        Expanded(child: Divider(color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border)),
+        Expanded(
+          child: Divider(
+            color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
+          ),
+        ),
       ],
     );
   }
@@ -372,23 +426,31 @@ class _LoginScreenState extends State<LoginScreen> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
-        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
+          );
+        },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          backgroundColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-          side: BorderSide(color: isDarkMode ? Colors.transparent : AppTheme.border),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          backgroundColor: isDarkMode
+              ? AppTheme.inputFieldBg
+              : AppTheme.background,
+          side: BorderSide(
+            color: isDarkMode ? Colors.transparent : AppTheme.border,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: Text(
-            AppLocalizations.of(context).translate('create_account'),
-            style: TextStyle(
-              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            )
+          AppLocalizations.of(context).translate('create_account'),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

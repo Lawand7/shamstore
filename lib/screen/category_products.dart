@@ -1,408 +1,680 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import 'package:shamstore/features/products/controllers/product_controller.dart';
+import 'package:shamstore/features/products/models/product_model.dart';
+import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
-class CategoryProductsScreen extends StatefulWidget {
+class CategoryProductsPage extends StatefulWidget {
+  final int categoryId;
   final String categoryName;
 
-  // 🔽 إضافة متغيرات الفلترة المستقبلة من واجهة البحث
-  final String? searchQuery;
-  final double? minPrice;
-  final double? maxPrice;
-  final String? governorate;
-
-  const CategoryProductsScreen({
+  const CategoryProductsPage({
     super.key,
+    required this.categoryId,
     required this.categoryName,
-    this.searchQuery,
-    this.minPrice,
-    this.maxPrice,
-    this.governorate,
   });
 
   @override
-  State<CategoryProductsScreen> createState() => _CategoryProductsScreenState();
+  State<CategoryProductsPage> createState() => _CategoryProductsPageState();
 }
 
-class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
-  // 📦 بيانات تجريبية للمنتجات تحتوي على الأقسام، الأسعار والمحافظات لاختبار الفلترة
-  final List<Map<String, dynamic>> _demoProducts = [
-    {
-      'name': 'منتج مميز ملابس',
-      'category': 'ملابس',
-      'price': 150000.0,
-      'gov': 'Damascus',
-    },
-    {
-      'name': 'جاكيت شتوي فاخر',
-      'category': 'ملابس',
-      'price': 250000.0,
-      'gov': 'Aleppo',
-    },
-    {
-      'name': 'سماعات ذكية بريميوم',
-      'category': 'إلكترونيات',
-      'price': 450000.0,
-      'gov': 'Damascus',
-    },
-    {
-      'name': 'حذاء رياضي مريح',
-      'category': 'أحذية',
-      'price': 180000.0,
-      'gov': 'Homs',
-    },
-    {
-      'name': 'رواية مشوقة',
-      'category': 'كتب',
-      'price': 35000.0,
-      'gov': 'Latakia',
-    },
-  ];
+class _CategoryProductsPageState extends State<CategoryProductsPage> {
+  late final ProductController _productController;
+  final ScrollController _scrollController = ScrollController();
 
-  // ⚙️ دالة معالجة وتطبيق الفلاتر ديناميكياً
-  List<Map<String, dynamic>> get _filteredProducts {
-    return _demoProducts.where((product) {
-      // 1. الفرز حسب القسم الحالي
-      final matchesCategory = product['category'] == widget.categoryName;
+  final Set<int> _favoriteProductIds = <int>{};
 
-      // 2. الفرز حسب كلمة البحث إن وجدت
-      final matchesSearch =
-          widget.searchQuery == null ||
-          widget.searchQuery!.isEmpty ||
-          product['name'].toString().toLowerCase().contains(
-            widget.searchQuery!.toLowerCase(),
-          );
+  @override
+  void initState() {
+    super.initState();
 
-      // 3. الفرز حسب نطاق السعر (الحد الأدنى والأعلى)
-      final matchesMinPrice =
-          widget.minPrice == null || product['price'] >= widget.minPrice!;
-      final matchesMaxPrice =
-          widget.maxPrice == null || product['price'] <= widget.maxPrice!;
+    _productController = Get.isRegistered<ProductController>()
+        ? Get.find<ProductController>()
+        : Get.put(ProductController());
 
-      // 4. الفرز حسب المحافظة
-      final matchesGov =
-          widget.governorate == 'الكل' ||
-          widget.governorate == null ||
-          product['gov'] == widget.governorate;
+    _productController.fetchProductsByCategory(
+      categoryId: widget.categoryId,
+      refresh: true,
+    );
 
-      return matchesCategory &&
-          matchesSearch &&
-          matchesMinPrice &&
-          matchesMaxPrice &&
-          matchesGov;
-    }).toList();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (currentScroll >= maxScroll - 250) {
+      _productController.loadMoreCategoryProducts();
+    }
+  }
+
+  Future<void> _refreshProducts() async {
+    await _productController.fetchProductsByCategory(
+      categoryId: widget.categoryId,
+      refresh: true,
+    );
+  }
+
+  Map<String, dynamic> _productToMap(ProductModel product) {
+    return {
+      'id': product.id,
+      'seller_id': product.sellerId,
+      'category_id': product.categoryId,
+      'name': product.title,
+      'title': product.title,
+      'description': product.description,
+      'city': product.governorate,
+      'governorate': product.governorate,
+      'price': _formatPrice(product.price),
+      'quantity': product.quantity,
+      'product_image_url': product.productImageUrl,
+      'imageUrl': product.fullImageUrl,
+      'product_url': product.productUrl,
+      'is_active': product.isActive,
+      'created_at': product.createdAt,
+      'updated_at': product.updatedAt,
+      'icon': Icons.image_outlined,
+      'fav': _favoriteProductIds.contains(product.id),
+      'rating': 0.0,
+      'sold': 0,
+      'sellerRating': 0.0,
+      'sellerName': 'Seller #${product.sellerId}',
+    };
+  }
+
+  String _formatPrice(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(2);
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color activeColor = isDarkMode
-        ? AppTheme.accentBlue
-        : AppTheme.primary;
-    final products = _filteredProducts; // جلب المنتجات المفلترة
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppTheme.darkBackground
           : AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context).translate(widget.categoryName),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_outlined,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage()),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  AppLocalizations.of(context).translate(widget.categoryName),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode
-                        ? AppTheme.textPrimary
-                        : AppTheme.textDark,
-                  ),
-                ),
-                Text(
-                  AppLocalizations.of(
-                    context,
-                  ).translate('Available products in section'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode
-                        ? AppTheme.textPrimary
-                        : AppTheme.textDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // عرض المنتجات المفلترة أو رسالة فارغة في حال لم يطابق الفلتر أي منتج
-            products.isEmpty
-                ? Expanded(
-                    child: Center(
-                      child: Text(
-                        AppLocalizations.of(
-                          context,
-                        ).translate('No products found'),
-                        style: TextStyle(
-                          color: isDarkMode
-                              ? AppTheme.textSecondary
-                              : AppTheme.textGrey,
-                        ),
-                      ),
-                    ),
-                  )
-                : Expanded(
-                    child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final item = products[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? AppTheme.cardBackground
-                                : AppTheme.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isDarkMode
-                                  ? Colors.transparent
-                                  : AppTheme.border,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(
-                                  isDarkMode ? 0.15 : 0.04,
-                                ),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                height: 120,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? AppTheme.inputFieldBg
-                                      : AppTheme.background,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  _getCategoryIcon(widget.categoryName),
-                                  size: 60,
-                                  color: activeColor.withOpacity(0.5),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    ' )',
-                                    style: TextStyle(
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    item['name'],
-                                    style: TextStyle(
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    ' ( ',
-                                    style: TextStyle(
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('Featured Demo Product'),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              // عرض المحافظة الخاصة بالمنتج
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    size: 12,
-                                    color: isDarkMode
-                                        ? AppTheme.textSecondary
-                                        : AppTheme.textGrey,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate(item['gov']),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isDarkMode
-                                          ? AppTheme.textSecondary
-                                          : AppTheme.textGrey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                AppLocalizations.of(context).translate(
-                                  'This product is currently available for demo display inside the section at a competitive price',
-                                ),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDarkMode
-                                      ? AppTheme.textSecondary
-                                      : AppTheme.textGrey,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('SYP'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: activeColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    item['price']
-                                        .toStringAsFixed(0)
-                                        .replaceAllMapped(
-                                          RegExp(
-                                            r'(\d{1,3})(?=(\d{3})+(?!\d))',
-                                          ),
-                                          (Match m) => '${m[1]},',
-                                        ),
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: activeColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-            Center(
-              child: Text(
-                AppLocalizations.of(
-                  context,
-                ).translate('More products will be listed soon...'),
-                style: TextStyle(
-                  color: isDarkMode
-                      ? AppTheme.textSecondary
-                      : AppTheme.textLight,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
+            _buildHeader(isDarkMode),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshProducts,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(child: _buildInfoBar(isDarkMode)),
+                    _buildProductsSliver(isDarkMode),
+                    SliverToBoxAdapter(child: _buildLoadMoreIndicator()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
 
-  IconData _getCategoryIcon(String name) {
-    switch (name) {
-      case 'ملابس':
-        return Icons.checkroom_rounded;
-      case 'أحذية':
-        return Icons.ice_skating_rounded;
-      case 'كتب':
-        return Icons.menu_book_rounded;
-      case 'إلكترونيات':
-        return Icons.devices_rounded;
-      case 'رياضة':
-        return Icons.sports_basketball_rounded;
-      case 'أثاث':
-        return Icons.chair_rounded;
-      case 'مستلزمات مدرسية':
-        return Icons.school_rounded;
-      case 'مستحضرات تجميل':
-        return Icons.face_retouching_natural_rounded;
-      case 'أدوات منزلية':
-        return Icons.blender_rounded;
-      case 'ألعاب':
-        return Icons.videogame_asset_rounded;
-      default:
-        return Icons.shopping_bag_outlined;
-    }
+  Widget _buildHeader(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+      decoration: BoxDecoration(
+        color: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                _isArabic()
+                    ? Icons.arrow_forward_ios_rounded
+                    : Icons.arrow_back_ios_new_rounded,
+                color: AppTheme.white,
+                size: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.categoryName,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: AppTheme.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
+  Widget _buildInfoBar(bool isDarkMode) {
+    return Obx(() {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: _refreshProducts,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+              ),
+              child: Text(
+                'تحديث',
+                style: TextStyle(
+                  color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            Text(
+              'عدد المنتجات: ${_productController.categoryTotal.value}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildProductsSliver(bool isDarkMode) {
+    return Obx(() {
+      if (_productController.isCategoryLoading.value &&
+          _productController.categoryProducts.isEmpty) {
+        return const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      }
+
+      if (_productController.categoryErrorMessage.value.isNotEmpty &&
+          _productController.categoryProducts.isEmpty) {
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: _buildErrorState(isDarkMode),
+          ),
+        );
+      }
+
+      if (_productController.categoryProducts.isEmpty) {
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: _buildEmptyState(isDarkMode),
+          ),
+        );
+      }
+
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverGrid(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final product = _productController.categoryProducts[index];
+
+            return _buildProductCard(product, isDarkMode);
+          }, childCount: _productController.categoryProducts.length),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.78,
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return Obx(() {
+      if (!_productController.isCategoryLoadingMore.value) {
+        return const SizedBox.shrink();
+      }
+
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildErrorState(bool isDarkMode) {
+    final Color activePrimary = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode ? Colors.transparent : AppTheme.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 36),
+          const SizedBox(height: 10),
+          Text(
+            _productController.categoryErrorMessage.value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: _refreshProducts,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: activePrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'إعادة المحاولة',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDarkMode) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode ? Colors.transparent : AppTheme.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+            size: 38,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'لا توجد منتجات في هذا التصنيف',
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'اسحب للأسفل لتحديث القائمة',
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(ProductModel product, bool isDarkMode) {
+    final Color activePrimary = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
+    final bool isFavorite = _favoriteProductIds.contains(product.id);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailsPage(product: _productToMap(product)),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDarkMode
+                ? AppTheme.inputFieldBg.withOpacity(0.5)
+                : Colors.transparent,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: _isArabic()
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: Container(
+                    height: 95,
+                    width: double.infinity,
+                    color: isDarkMode
+                        ? AppTheme.darkBackground
+                        : AppTheme.background.withOpacity(0.5),
+                    child: _buildProductImage(
+                      product,
+                      isDarkMode,
+                      activePrimary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: _isArabic()
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          product.title.isNotEmpty
+                              ? product.title
+                              : 'منتج بدون اسم',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? AppTheme.textPrimary
+                                : AppTheme.textDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Row(
+                          mainAxisAlignment: _isArabic()
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            if (!_isArabic())
+                              Icon(
+                                Icons.location_on,
+                                size: 11,
+                                color: activePrimary,
+                              ),
+                            Expanded(
+                              child: Text(
+                                product.governorate.isNotEmpty
+                                    ? product.governorate
+                                    : 'غير متوفر',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDarkMode
+                                      ? AppTheme.textSecondary
+                                      : AppTheme.textLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: _isArabic()
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                              ),
+                            ),
+                            if (_isArabic())
+                              Icon(
+                                Icons.location_on,
+                                size: 11,
+                                color: activePrimary,
+                              ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: _isArabic()
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            if (!_isArabic())
+                              const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 11,
+                                color: Colors.orange,
+                              ),
+                            if (!_isArabic()) const SizedBox(width: 3),
+                            Text(
+                              product.quantity.toString(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                'الكمية المتوفرة',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDarkMode
+                                      ? AppTheme.textSecondary
+                                      : AppTheme.textLight,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: _isArabic()
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                              ),
+                            ),
+                            if (_isArabic()) const SizedBox(width: 3),
+                            if (_isArabic())
+                              const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 11,
+                                color: Colors.orange,
+                              ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? AppTheme.selectedBorder
+                                    : AppTheme.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.add_shopping_cart,
+                                color: isDarkMode
+                                    ? AppTheme.darkBackground
+                                    : Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                if (!_isArabic())
+                                  Text(
+                                    _formatPrice(product.price),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: activePrimary,
+                                    ),
+                                  ),
+                                Text(
+                                  ' ${AppLocalizations.of(context).translate('currency')} ',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_isArabic())
+                                  Text(
+                                    _formatPrice(product.price),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: activePrimary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (isFavorite) {
+                      _favoriteProductIds.remove(product.id);
+                    } else {
+                      _favoriteProductIds.add(product.id);
+                    }
+                  });
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? AppTheme.inputFieldBg : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.red,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductImage(
+    ProductModel product,
+    bool isDarkMode,
+    Color activePrimary,
+  ) {
+    if (product.fullImageUrl.isEmpty) {
+      return Icon(
+        Icons.image_outlined,
+        size: 48,
+        color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+      );
+    }
+
+    return Image.network(
+      product.fullImageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: 95,
+      errorBuilder: (_, __, ___) {
+        return Icon(
+          Icons.broken_image_outlined,
+          size: 44,
+          color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+        );
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: activePrimary,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _isArabic() => Localizations.localeOf(context).languageCode == 'ar';
 }

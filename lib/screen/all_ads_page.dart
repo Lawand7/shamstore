@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
-import 'package:shamstore/screen/home_page.dart';
 
 class AllAdsPage extends StatelessWidget {
   const AllAdsPage({super.key});

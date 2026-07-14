@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'reset_password_screen.dart';
+import 'package:get/get.dart';
+
+import 'package:shamstore/features/auth/controllers/forgot_password_controller.dart';
+import 'package:shamstore/screen/reset_password_screen.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -11,7 +14,18 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  late final ForgotPasswordController _forgotPasswordController;
+
   final _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _forgotPasswordController = Get.isRegistered<ForgotPasswordController>()
+        ? Get.find<ForgotPasswordController>()
+        : Get.put(ForgotPasswordController());
+  }
 
   @override
   void dispose() {
@@ -19,24 +33,89 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
+  bool _isValidEmail(String email) {
+    return email.contains('@') && email.contains('.');
+  }
+
+  Future<void> _submitEmail() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال البريد الإلكتروني',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال بريد إلكتروني صحيح',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final success = await _forgotPasswordController.sendOtp(email: email);
+
+    if (!mounted) return;
+
+    if (!success) {
+      Get.snackbar(
+        'فشل إرسال الرمز',
+        _forgotPasswordController.errorMessage.value.isNotEmpty
+            ? _forgotPasswordController.errorMessage.value
+            : 'حدث خطأ أثناء إرسال رمز التحقق',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    Get.snackbar(
+      'تم الإرسال',
+      'تم إرسال رمز التحقق إلى البريد الإلكتروني',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ResetPasswordScreen(email: email)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color activePrimary = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
+    final bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final Color activePrimary = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          icon: Icon(
+            isArabic ? Icons.arrow_forward_ios : Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           AppLocalizations.of(context).translate('Account Recovery'),
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SafeArea(
@@ -54,108 +133,158 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   color: activePrimary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_reset_rounded, size: 50, color: activePrimary),
+                child: Icon(
+                  Icons.lock_reset_rounded,
+                  size: 50,
+                  color: activePrimary,
+                ),
               ),
+
               const SizedBox(height: 24),
 
               Text(
                 AppLocalizations.of(context).translate('Forgot Password?'),
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: activePrimary),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: activePrimary,
+                ),
               ),
+
               const SizedBox(height: 10),
 
               Text(
-                AppLocalizations.of(context).translate('Forgot password description'),
+                'أدخل بريدك الإلكتروني لإرسال رمز التحقق وإعادة تعيين كلمة المرور.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+                  color: isDarkMode
+                      ? AppTheme.textSecondary
+                      : AppTheme.textGrey,
                   height: 1.5,
                 ),
               ),
+
               const SizedBox(height: 40),
 
               Align(
-                alignment: _isArabic() ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: isArabic
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0, right: 4, left: 4),
+                  padding: const EdgeInsets.only(
+                    bottom: 8.0,
+                    right: 4,
+                    left: 4,
+                  ),
                   child: Text(
                     AppLocalizations.of(context).translate('Email Address'),
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: activePrimary),
-                  ),
-                ),
-              ),
-
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textAlign: TextAlign.left,
-                style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'example@gmail.com',
-                  hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary.withOpacity(0.5) : Colors.black26, fontSize: 14),
-                  prefixIcon: Icon(Icons.email_outlined, color: activePrimary),
-                  filled: true,
-                  fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.white,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDarkMode ? Colors.transparent : const Color(0xFFE9ECEF), width: 1.5),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ResetPasswordScreen()));
-                  },
-                  child: Text(
-                    AppLocalizations.of(context).translate('Send Button'),
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ResetPasswordScreen()));
-                  },
-                  child: Text(
-                    AppLocalizations.of(context).translate('Temporary Skip'),
                     style: TextStyle(
-                      color: isDarkMode ? AppTheme.textPrimary : AppTheme.primary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: activePrimary,
                     ),
                   ),
                 ),
               ),
+
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? AppTheme.textPrimary
+                        : AppTheme.textDark,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'example@gmail.com',
+                    hintStyle: TextStyle(
+                      color: isDarkMode
+                          ? AppTheme.textSecondary.withOpacity(0.5)
+                          : Colors.black26,
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: activePrimary,
+                    ),
+                    filled: true,
+                    fillColor: isDarkMode
+                        ? AppTheme.inputFieldBg
+                        : AppTheme.white,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.transparent
+                            : const Color(0xFFE9ECEF),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? AppTheme.selectedBorder
+                            : AppTheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              Obx(() {
+                final isLoading = _forgotPasswordController.isSendingOtp.value;
+
+                return SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDarkMode
+                          ? AppTheme.selectedBorder
+                          : AppTheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: isLoading ? null : _submitEmail,
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            AppLocalizations.of(
+                              context,
+                            ).translate('Send Button'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                );
+              }),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
       ),
     );
   }
-
-  bool _isArabic() => Localizations.localeOf(context).languageCode == 'ar';
 }

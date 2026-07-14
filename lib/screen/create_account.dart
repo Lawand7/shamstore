@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'package:shamstore/features/auth/controllers/register_controller.dart';
 import 'package:shamstore/screen/otp_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -12,17 +18,22 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  final ImagePicker _imagePicker = ImagePicker();
+
+  late final RegisterController _registerController;
+
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+
   String _selectedRole = 'buyer';
   String? _selectedGovernorate;
-  String? _profileImagePath;
 
-  String? _idCardImagePath;
-  bool _isLocationSelected = false;
+  XFile? _profileImage;
+  XFile? _identityImage;
 
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -30,31 +41,60 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _walletPinController = TextEditingController();
 
   final List<String> _governorates = [
-    'Damascus', 'Aleppo', 'Homs', 'Hama', 'Latakia',
-    'Tartus', 'Deir ez-Zor', 'Al-Hasakah', 'Raqqa',
-    'Daraa', 'Sweida', 'Quneitra', 'Idlib',
+    'Damascus',
+    'Aleppo',
+    'Homs',
+    'Hama',
+    'Latakia',
+    'Tartous',
+    'Idlib',
+    'Deir el-Zor',
+    'Raqqa',
+    'Hasakah',
+    'Suwayda',
+    'Daraa',
+    'Quneitra',
+    'Rif Dimashq',
   ];
 
-  void _pickImage() {
-    setState(() => _profileImagePath = 'selected');
+  @override
+  void initState() {
+    super.initState();
+
+    _registerController = Get.isRegistered<RegisterController>()
+        ? Get.find<RegisterController>()
+        : Get.put(RegisterController());
   }
 
-  void _pickIdCardImage() {
-    setState(() => _idCardImagePath = 'id_selected');
-  }
-
-  void _openMiniMap() {
-    setState(() => _isLocationSelected = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).translate('Location selected successfully')),
-        backgroundColor: Colors.green,
-      ),
+  Future<void> _pickProfileImage() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
     );
+
+    if (picked != null) {
+      setState(() {
+        _profileImage = picked;
+      });
+    }
+  }
+
+  Future<void> _pickIdentityImage() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _identityImage = picked;
+      });
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime(2005),
@@ -69,23 +109,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               onSurface: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               surface: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
             ),
-            dialogBackgroundColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           ),
           child: child!,
         );
       },
     );
+
     if (picked != null) {
       setState(() {
-        _dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _dobController.text =
+            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
     _lastNameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -99,7 +141,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -112,12 +156,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   _buildProfilePicker(isDarkMode),
                   const SizedBox(height: 16),
                   _buildRoleSelector(isDarkMode),
-
                   if (_selectedRole == 'seller') ...[
                     const SizedBox(height: 16),
-                    _buildIdCardPicker(isDarkMode),
+                    _buildIdentityPicker(isDarkMode),
                   ],
-
                   const SizedBox(height: 16),
                   _buildForm(isDarkMode),
                   const SizedBox(height: 16),
@@ -155,16 +197,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: isDarkMode ? AppTheme.inputFieldBg : Colors.white.withOpacity(0.15),
+                    color: isDarkMode
+                        ? AppTheme.inputFieldBg
+                        : Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.arrow_back, color: AppTheme.white, size: 18),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: AppTheme.white,
+                    size: 18,
+                  ),
                 ),
               ),
             ),
             Text(
               AppLocalizations.of(context).translate('Create Account'),
-              style: const TextStyle(color: AppTheme.white, fontSize: 22, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: AppTheme.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -175,35 +227,49 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   Widget _buildProfilePicker(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 2))],
-      ),
+      decoration: _cardDecoration(isDarkMode),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context).translate('Profile Picture'),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+            style: _labelStyle(isDarkMode),
           ),
           const SizedBox(height: 14),
           Center(
             child: GestureDetector(
-              onTap: _pickImage,
+              onTap: _pickProfileImage,
               child: Stack(
                 children: [
                   Container(
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+                      color: isDarkMode
+                          ? AppTheme.inputFieldBg
+                          : AppTheme.background,
                       shape: BoxShape.circle,
-                      border: Border.all(color: isDarkMode ? Colors.transparent : AppTheme.border, width: 1.5),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.transparent
+                            : AppTheme.border,
+                        width: 1.5,
+                      ),
                     ),
-                    child: _profileImagePath != null
-                        ? Icon(Icons.person, size: 44, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary)
-                        : Icon(Icons.person_outline, size: 44, color: isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight),
+                    child: _profileImage != null
+                        ? ClipOval(
+                            child: Image.file(
+                              File(_profileImage!.path),
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(
+                            Icons.person_outline,
+                            size: 44,
+                            color: isDarkMode
+                                ? AppTheme.iconUnselected
+                                : AppTheme.textLight,
+                          ),
                   ),
                   Positioned(
                     bottom: 0,
@@ -211,8 +277,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     child: Container(
                       width: 28,
                       height: 28,
-                      decoration: BoxDecoration(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt, color: AppTheme.white, size: 15),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? AppTheme.selectedBorder
+                            : AppTheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: AppTheme.white,
+                        size: 15,
+                      ),
                     ),
                   ),
                 ],
@@ -222,10 +297,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              _profileImagePath != null
-                  ? AppLocalizations.of(context).translate('Tap to change photo')
-                  : AppLocalizations.of(context).translate('Tap to upload photo'),
-              style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
+              _profileImage != null
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('Tap to change photo')
+                  : AppLocalizations.of(
+                      context,
+                    ).translate('Tap to upload photo'),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+              ),
             ),
           ),
         ],
@@ -236,17 +318,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   Widget _buildRoleSelector(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 2))],
-      ),
+      decoration: _cardDecoration(isDarkMode),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context).translate('I want to join as'),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+            style: _labelStyle(isDarkMode),
           ),
           const SizedBox(height: 12),
           Row(
@@ -277,16 +355,33 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  Widget _buildRoleCard(String role, IconData icon, String title, String subtitle, bool isDarkMode) {
+  Widget _buildRoleCard(
+    String role,
+    IconData icon,
+    String title,
+    String subtitle,
+    bool isDarkMode,
+  ) {
     final isSelected = _selectedRole == role;
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedRole = role),
+      onTap: () {
+        setState(() {
+          _selectedRole = role;
+
+          if (_selectedRole == 'buyer') {
+            _identityImage = null;
+          }
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDarkMode ? AppTheme.selectedBorder.withOpacity(0.2) : AppTheme.primaryLight)
+              ? (isDarkMode
+                    ? AppTheme.selectedBorder.withOpacity(0.2)
+                    : AppTheme.primaryLight)
               : (isDarkMode ? AppTheme.inputFieldBg : AppTheme.background),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
@@ -298,64 +393,104 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 24, color: isSelected ? (isDarkMode ? AppTheme.accentBlue : AppTheme.primary) : (isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight)),
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected
+                  ? (isDarkMode ? AppTheme.accentBlue : AppTheme.primary)
+                  : (isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight),
+            ),
             const SizedBox(height: 6),
-            Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isSelected ? (isDarkMode ? AppTheme.textPrimary : AppTheme.primary) : (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey))),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isSelected
+                    ? (isDarkMode ? AppTheme.textPrimary : AppTheme.primary)
+                    : (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(subtitle, style: TextStyle(fontSize: 11, color: isSelected ? (isDarkMode ? AppTheme.textSecondary : AppTheme.primarySoft) : (isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight))),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected
+                    ? (isDarkMode
+                          ? AppTheme.textSecondary
+                          : AppTheme.primarySoft)
+                    : (isDarkMode
+                          ? AppTheme.iconUnselected
+                          : AppTheme.textLight),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildIdCardPicker(bool isDarkMode) {
+  Widget _buildIdentityPicker(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 2))],
-      ),
+      decoration: _cardDecoration(isDarkMode),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context).translate('Identity Card Image'),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+            style: _labelStyle(isDarkMode),
           ),
           const SizedBox(height: 12),
           GestureDetector(
-            onTap: _pickIdCardImage,
+            onTap: _pickIdentityImage,
             child: Container(
-              height: 100,
+              height: 120,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _idCardImagePath != null ? Colors.green.withOpacity(0.5) : (isDarkMode ? Colors.transparent : AppTheme.border), width: 1.5),
+                border: Border.all(
+                  color: _identityImage != null
+                      ? Colors.green.withOpacity(0.5)
+                      : (isDarkMode ? Colors.transparent : AppTheme.border),
+                  width: 1.5,
+                ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _idCardImagePath != null ? Icons.assignment_turned_in_outlined : Icons.add_photo_alternate_outlined,
-                    color: _idCardImagePath != null ? Colors.green : (isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
-                    size: 28,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _idCardImagePath != null
-                        ? AppLocalizations.of(context).translate('ID Card Uploaded')
-                        : AppLocalizations.of(context).translate('Tap to upload National ID card'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _idCardImagePath != null ? Colors.green : (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
+              child: _identityImage != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.file(
+                        File(_identityImage!.path),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_photo_alternate_outlined,
+                          color: isDarkMode
+                              ? AppTheme.accentBlue
+                              : AppTheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          ).translate('Tap to upload National ID card'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDarkMode
+                                ? AppTheme.textSecondary
+                                : AppTheme.textGrey,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
@@ -366,61 +501,45 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   Widget _buildForm(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 2))],
-      ),
+      decoration: _cardDecoration(isDarkMode),
       child: Column(
         children: [
           _buildField(
             label: AppLocalizations.of(context).translate('First Name'),
-            hint: AppLocalizations.of(context).translate('Enter your first name'),
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Enter your first name'),
             icon: Icons.person_outline,
-            controller: _nameController,
+            controller: _firstNameController,
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 14),
           _buildField(
             label: AppLocalizations.of(context).translate('Last Name'),
-            hint: AppLocalizations.of(context).translate('Enter your last name'),
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Enter your last name'),
             icon: Icons.person_outline,
             controller: _lastNameController,
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 14),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context).translate('Dark Mode' != null ? 'Date of Birth' : ''),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dobController,
-                readOnly: true,
-                onTap: () => _selectDate(context),
-                style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context).translate('Select your birth date'),
-                  hintStyle: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
-                  prefixIcon: Icon(Icons.calendar_today_outlined, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
-                  filled: true,
-                  fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)),
-                ),
-              ),
-            ],
+          _buildField(
+            label: AppLocalizations.of(context).translate('Email Address'),
+            hint: AppLocalizations.of(context).translate('Enter your email'),
+            icon: Icons.mail_outline,
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 14),
-
+          _buildDateField(isDarkMode),
+          const SizedBox(height: 14),
           _buildField(
             label: AppLocalizations.of(context).translate('Phone Number'),
-            hint: AppLocalizations.of(context).translate('Enter your phone number'),
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Enter your phone number'),
             icon: Icons.phone_outlined,
             controller: _phoneController,
             keyboardType: TextInputType.phone,
@@ -436,54 +555,89 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             controller: _passwordController,
             isPassword: true,
             obscure: _obscurePassword,
-            onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+            onToggle: () {
+              setState(() => _obscurePassword = !_obscurePassword);
+            },
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 14),
           _buildField(
             label: AppLocalizations.of(context).translate('Confirm Password'),
-            hint: AppLocalizations.of(context).translate('Repeat your password'),
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Repeat your password'),
             icon: Icons.lock_outline,
             controller: _confirmController,
             isPassword: true,
             obscure: _obscureConfirm,
-            onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
+            onToggle: () {
+              setState(() => _obscureConfirm = !_obscureConfirm);
+            },
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 14),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context).translate('Wallet PIN (4 Digits)'),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _walletPinController,
-                obscureText: true,
-                obscuringCharacter: '●',
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context).translate('Set 4-digit PIN for wallet safety'),
-                  hintStyle: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
-                  counterText: '',
-                  prefixIcon: Icon(Icons.wallet_membership_outlined, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
-                  filled: true,
-                  fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)),
-                ),
-              ),
-            ],
-          ),
+          _buildWalletPinField(isDarkMode),
         ],
       ),
+    );
+  }
+
+  Widget _buildDateField(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context).translate('Date of Birth'),
+          style: _labelStyle(isDarkMode),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _dobController,
+          readOnly: true,
+          onTap: () => _selectDate(context),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+          decoration: _inputDecoration(
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Select your birth date'),
+            icon: Icons.calendar_today_outlined,
+            isDarkMode: isDarkMode,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWalletPinField(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context).translate('Wallet PIN (4 Digits)'),
+          style: _labelStyle(isDarkMode),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _walletPinController,
+          obscureText: true,
+          obscuringCharacter: '●',
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+          decoration: _inputDecoration(
+            hint: AppLocalizations.of(
+              context,
+            ).translate('Set 4-digit PIN for wallet safety'),
+            icon: Icons.wallet_membership_outlined,
+            isDarkMode: isDarkMode,
+          ).copyWith(counterText: ''),
+        ),
+      ],
     );
   }
 
@@ -493,7 +647,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       children: [
         Text(
           AppLocalizations.of(context).translate('Governorate'),
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+          style: _labelStyle(isDarkMode),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -501,25 +655,34 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             AppLocalizations.of(context).translate('Select your governorate'),
-            style: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight),
-          ),
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.location_on_outlined, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)),
-          ),
-          items: _governorates.map((gov) => DropdownMenuItem(
-            value: gov,
-            child: Text(
-              AppLocalizations.of(context).translate(gov),
-              style: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+            style: TextStyle(
+              fontSize: 13,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
             ),
-          )).toList(),
-          onChanged: (val) => setState(() => _selectedGovernorate = val),
+          ),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+          decoration: _inputDecoration(
+            hint: '',
+            icon: Icons.location_on_outlined,
+            isDarkMode: isDarkMode,
+          ),
+          items: _governorates.map((gov) {
+            return DropdownMenuItem(
+              value: gov,
+              child: Text(
+                AppLocalizations.of(context).translate(gov),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => _selectedGovernorate = val);
+          },
         ),
       ],
     );
@@ -539,28 +702,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
+        Text(label, style: _labelStyle(isDarkMode)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           obscureText: isPassword ? obscure : false,
           keyboardType: keyboardType,
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 13),
-            prefixIcon: Icon(icon, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
-            suffixIcon: isPassword
-                ? IconButton(
-              icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: isDarkMode ? AppTheme.iconUnselected : AppTheme.textLight, size: 18),
-              onPressed: onToggle,
-            )
-                : null,
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary)),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+          decoration: _inputDecoration(
+            hint: hint,
+            icon: icon,
+            isDarkMode: isDarkMode,
+            isPassword: isPassword,
+            obscure: obscure,
+            onToggle: onToggle,
           ),
         ),
       ],
@@ -568,20 +725,240 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   Widget _buildCreateButton(bool isDarkMode) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OtpScreen(phoneNumber: _phoneController.text))),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-          foregroundColor: AppTheme.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
+    return Obx(() {
+      final isLoading = _registerController.isLoading.value;
+
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : _submitRegister,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDarkMode
+                ? AppTheme.selectedBorder
+                : AppTheme.primary,
+            foregroundColor: AppTheme.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  AppLocalizations.of(context).translate('Create Account'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
         ),
-        child: Text(
-          AppLocalizations.of(context).translate('Create Account'),
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+      );
+    });
+  }
+
+  Future<void> _submitRegister() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmController.text.trim();
+    final dateOfBirth = _dobController.text.trim();
+    final governorate = _selectedGovernorate;
+    final walletPin = _walletPinController.text.trim();
+
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty ||
+        dateOfBirth.isEmpty ||
+        governorate == null ||
+        walletPin.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى تعبئة جميع الحقول المطلوبة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال بريد إلكتروني صحيح',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (_profileImage == null) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى اختيار صورة الملف الشخصي',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (_selectedRole == 'seller' && _identityImage == null) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى اختيار صورة الهوية للبائع',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      Get.snackbar(
+        'تنبيه',
+        'كلمة المرور وتأكيد كلمة المرور غير متطابقين',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (walletPin.length != 4) {
+      Get.snackbar(
+        'تنبيه',
+        'رمز المحفظة يجب أن يكون 4 أرقام',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final apiRole = _selectedRole == 'buyer' ? 'customer' : 'seller';
+
+    final success = await _registerController.register(
+      email: email,
+      password: password,
+      passwordConfirmation: confirmPassword,
+      role: apiRole,
+      dateOfBirth: dateOfBirth,
+      firstName: firstName,
+      lastName: lastName,
+      governorate: governorate,
+      walletPin: walletPin,
+      profileImagePath: _profileImage!.path,
+      identityImagePath: _identityImage?.path,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      Get.snackbar(
+        'فشل إنشاء الحساب',
+        _registerController.errorMessage.value.isNotEmpty
+            ? _registerController.errorMessage.value
+            : 'حدث خطأ أثناء إنشاء الحساب',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    Get.snackbar(
+      'تم إرسال رمز التحقق',
+      'يرجى إدخال الرمز المرسل إلى البريد الإلكتروني',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OtpScreen(
+          phoneNumber: email,
+          pendingRegistrationData: PendingRegistrationData(
+            email: email,
+            role: apiRole,
+            firstName: firstName,
+            lastName: lastName,
+            dateOfBirth: dateOfBirth,
+            governorate: governorate,
+          ),
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration(bool isDarkMode) {
+    return BoxDecoration(
+      color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  TextStyle _labelStyle(bool isDarkMode) {
+    return TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+    required bool isDarkMode,
+    bool isPassword = false,
+    bool obscure = false,
+    VoidCallback? onToggle,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+        fontSize: 13,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+        size: 18,
+      ),
+      suffixIcon: isPassword
+          ? IconButton(
+              icon: Icon(
+                obscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: isDarkMode
+                    ? AppTheme.iconUnselected
+                    : AppTheme.textLight,
+                size: 18,
+              ),
+              onPressed: onToggle,
+            )
+          : null,
+      filled: true,
+      fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
         ),
       ),
     );

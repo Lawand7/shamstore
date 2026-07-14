@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'package:shamstore/features/seller/controllers/seller_product_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
-import 'package:shamstore/screen/my_products_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -11,16 +16,50 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _qtyController = TextEditingController();
-  final _descController = TextEditingController();
-  String? _selectedCategory;
-  String? _selectedGovernorate;
-  bool _imageSelected = false;
+  late final SellerProductController _sellerProductController;
 
-  final List<String> _categories = ['Clothing', 'Shoes', 'Electronics', 'Books', 'Furniture', 'Sports', 'Supplies', 'Household', 'Toys'];
-  final List<String> _governorates = ['Damascus', 'Aleppo', 'Homs', 'Hama', 'Latakia', 'Tartus', 'Deir ez-Zor', 'Al-Hasakah', 'Raqqa', 'Daraa', 'Sweida', 'Quneitra', 'Idlib'];
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _qtyController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  File? _selectedImageFile;
+  int? _selectedCategoryId;
+  String? _selectedGovernorate;
+
+  final List<Map<String, dynamic>> _categories = const [
+    {'id': 1, 'name': 'Electronics'},
+  ];
+
+  final List<String> _governorates = [
+    'Damascus',
+    'Aleppo',
+    'Homs',
+    'Hama',
+    'Lattakia',
+    'Tartous',
+    'Idlib',
+    'Deir el-Zor',
+    'Raqqa',
+    'Hasakah',
+    'Suwayda',
+    'Daraa',
+    'Quneitra',
+    'Rif Dimashq',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _sellerProductController = Get.isRegistered<SellerProductController>()
+        ? Get.find<SellerProductController>()
+        : Get.put(SellerProductController());
+
+    _sellerProductController.clearCreateProductState();
+  }
 
   @override
   void dispose() {
@@ -31,19 +70,158 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedImage = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (pickedImage == null) return;
+
+      setState(() {
+        _selectedImageFile = File(pickedImage.path);
+      });
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        'تعذر اختيار الصورة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> _submitProduct() async {
+    final title = _nameController.text.trim();
+    final description = _descController.text.trim();
+    final priceText = _priceController.text.trim();
+    final quantityText = _qtyController.text.trim();
+
+    if (_selectedImageFile == null) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى اختيار صورة المنتج',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (title.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال اسم المنتج',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (priceText.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال السعر',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (quantityText.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى إدخال الكمية',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (_selectedCategoryId == null) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى اختيار التصنيف',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (_selectedGovernorate == null || _selectedGovernorate!.trim().isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'يرجى اختيار المحافظة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final price = double.tryParse(priceText);
+    final quantity = int.tryParse(quantityText);
+
+    if (price == null || price < 0) {
+      Get.snackbar(
+        'تنبيه',
+        'السعر غير صالح',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (quantity == null || quantity < 0) {
+      Get.snackbar(
+        'تنبيه',
+        'الكمية غير صالحة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final success = await _sellerProductController.createProduct(
+      title: title,
+      description: description,
+      price: price,
+      quantity: quantity,
+      governorate: _selectedGovernorate!,
+      categoryId: _selectedCategoryId!,
+      productImageFile: _selectedImageFile!,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      Get.snackbar(
+        'فشل إضافة المنتج',
+        _sellerProductController.createProductErrorMessage.value.isNotEmpty
+            ? _sellerProductController.createProductErrorMessage.value
+            : 'حدث خطأ أثناء إضافة المنتج',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    Get.snackbar(
+      'نجاح',
+      'تمت إضافة المنتج بنجاح',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+
+    Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
         title: Text(
           AppLocalizations.of(context).translate('Add Product'),
-          style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: AppTheme.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.white),
@@ -72,42 +250,96 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Widget _buildImagePicker(bool isDarkMode) {
-    final Color activeColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
+    final Color activeColor = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
 
     return GestureDetector(
-      onTap: () => setState(() => _imageSelected = true),
+      onTap: _pickImage,
       child: Container(
         width: double.infinity,
-        height: 140,
+        height: 160,
         decoration: BoxDecoration(
-          color: _imageSelected
+          color: _selectedImageFile != null
               ? activeColor.withOpacity(0.08)
               : (isDarkMode ? AppTheme.cardBackground : AppTheme.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _imageSelected ? activeColor : (isDarkMode ? Colors.transparent : AppTheme.border),
-            width: _imageSelected ? 1.5 : 0.5,
+            color: _selectedImageFile != null
+                ? activeColor
+                : (isDarkMode ? Colors.transparent : AppTheme.border),
+            width: _selectedImageFile != null ? 1.5 : 0.5,
           ),
         ),
-        child: _imageSelected
-            ? Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, color: activeColor, size: 36),
-            const SizedBox(height: 8),
-            Text(AppLocalizations.of(context).translate('Image Selected'), style: TextStyle(color: activeColor, fontSize: 13, fontWeight: FontWeight.w500)),
-            Text(AppLocalizations.of(context).translate('Tap to change'), style: TextStyle(color: activeColor.withOpacity(0.6), fontSize: 11)),
-          ],
-        )
+        child: _selectedImageFile != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(_selectedImageFile!, fit: BoxFit.cover),
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit, color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'تغيير',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.camera_alt_outlined, color: activeColor.withOpacity(0.6), size: 36),
-            const SizedBox(height: 8),
-            Text(AppLocalizations.of(context).translate('Upload product image'), style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey, fontSize: 13)),
-            Text(AppLocalizations.of(context).translate('Tap to select'), style: const TextStyle(color: AppTheme.textLight, fontSize: 11)),
-          ],
-        ),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.camera_alt_outlined,
+                    color: activeColor.withOpacity(0.6),
+                    size: 38,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(
+                      context,
+                    ).translate('Upload product image'),
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? AppTheme.textSecondary
+                          : AppTheme.textGrey,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    AppLocalizations.of(context).translate('Tap to select'),
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -118,23 +350,55 @@ class _AddProductPageState extends State<AddProductPage> {
       decoration: BoxDecoration(
         color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _buildField(AppLocalizations.of(context).translate('Product Name'), AppLocalizations.of(context).translate('Enter product name'), Icons.inventory_2_outlined, _nameController, isDarkMode),
+          _buildField(
+            label: AppLocalizations.of(context).translate('Product Name'),
+            hint: AppLocalizations.of(context).translate('Enter product name'),
+            icon: Icons.inventory_2_outlined,
+            controller: _nameController,
+            isDarkMode: isDarkMode,
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildField(AppLocalizations.of(context).translate('Price (SP)'), '0', Icons.attach_money, _priceController, isDarkMode, keyboardType: TextInputType.number)),
+              Expanded(
+                child: _buildField(
+                  label: AppLocalizations.of(context).translate('Price (SP)'),
+                  hint: '0',
+                  icon: Icons.attach_money,
+                  controller: _priceController,
+                  isDarkMode: isDarkMode,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _buildField(AppLocalizations.of(context).translate('Quantity'), '1', Icons.layers_outlined, _qtyController, isDarkMode, keyboardType: TextInputType.number)),
+              Expanded(
+                child: _buildField(
+                  label: AppLocalizations.of(context).translate('Quantity'),
+                  hint: '1',
+                  icon: Icons.layers_outlined,
+                  controller: _qtyController,
+                  isDarkMode: isDarkMode,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          _buildDropdown(AppLocalizations.of(context).translate('Category'), Icons.category_outlined, _categories, _selectedCategory, (val) => setState(() => _selectedCategory = val), isDarkMode),
+          _buildCategoryDropdown(isDarkMode),
           const SizedBox(height: 12),
-          _buildDropdown(AppLocalizations.of(context).translate('Governorate'), Icons.location_on_outlined, _governorates, _selectedGovernorate, (val) => setState(() => _selectedGovernorate = val), isDarkMode),
+          _buildGovernorateDropdown(isDarkMode),
           const SizedBox(height: 12),
           _buildDescField(isDarkMode),
         ],
@@ -142,61 +406,236 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  Widget _buildField(String label, String hint, IconData icon, TextEditingController controller, bool isDarkMode, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+    required bool isDarkMode,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           textAlign: TextAlign.right,
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 13),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 13,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 12),
-            prefixIcon: Icon(icon, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
+            hintStyle: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+              fontSize: 12,
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+              size: 18,
+            ),
             filled: true,
             fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5)),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                width: 1.5,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDropdown(String label, IconData icon, List<String> items, String? value, Function(String?) onChanged, bool isDarkMode) {
+  Widget _buildCategoryDropdown(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
+        Text(
+          AppLocalizations.of(context).translate('Category'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: value,
+        DropdownButtonFormField<int>(
+          value: _selectedCategoryId,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
-          hint: Text('${AppLocalizations.of(context).translate('Select')} $label', style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight)),
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 12),
+          hint: Text(
+            '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Category')}',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+          ),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 12,
+          ),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
+            prefixIcon: Icon(
+              Icons.category_outlined,
+              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+              size: 18,
+            ),
             filled: true,
             fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5)),
-          ),
-          items: items.map((item) => DropdownMenuItem(
-            value: item,
-            child: Text(
-              AppLocalizations.of(context).translate(item),
-              style: TextStyle(fontSize: 12, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 12,
             ),
-          )).toList(),
-          onChanged: onChanged,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                width: 1.5,
+              ),
+            ),
+          ),
+          items: _categories.map((category) {
+            final int id = int.tryParse(category['id'].toString()) ?? 0;
+            final String name = category['name'].toString();
+
+            return DropdownMenuItem<int>(
+              value: id,
+              child: Text(
+                AppLocalizations.of(context).translate(name),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedCategoryId = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGovernorateDropdown(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          AppLocalizations.of(context).translate('Governorate'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          value: _selectedGovernorate,
+          dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+          hint: Text(
+            '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Governorate')}',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+          ),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 12,
+          ),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              Icons.location_on_outlined,
+              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+              size: 18,
+            ),
+            filled: true,
+            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                width: 1.5,
+              ),
+            ),
+          ),
+          items: _governorates.map((governorate) {
+            return DropdownMenuItem<String>(
+              value: governorate,
+              child: Text(
+                AppLocalizations.of(context).translate(governorate),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedGovernorate = value;
+            });
+          },
         ),
       ],
     );
@@ -206,22 +645,53 @@ class _AddProductPageState extends State<AddProductPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(AppLocalizations.of(context).translate('Description'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark)),
+        Text(
+          AppLocalizations.of(context).translate('Description'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _descController,
           maxLines: 3,
           textAlign: TextAlign.right,
-          style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 13),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 13,
+          ),
           decoration: InputDecoration(
-            hintText: AppLocalizations.of(context).translate('Write a description for the product...'),
-            hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 12),
+            hintText: AppLocalizations.of(
+              context,
+            ).translate('Write a description for the product...'),
+            hintStyle: TextStyle(
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+              fontSize: 12,
+            ),
             filled: true,
             fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
             contentPadding: const EdgeInsets.all(12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                width: 1.5,
+              ),
+            ),
           ),
         ),
       ],
@@ -229,22 +699,45 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Widget _buildAddButton(bool isDarkMode) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-          foregroundColor: AppTheme.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 0,
+    return Obx(() {
+      final bool isLoading = _sellerProductController.isCreatingProduct.value;
+
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : _submitProduct,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDarkMode
+                ? AppTheme.selectedBorder
+                : AppTheme.primary,
+            foregroundColor: AppTheme.white,
+            disabledBackgroundColor: isDarkMode
+                ? AppTheme.inputFieldBg
+                : AppTheme.textLight,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  AppLocalizations.of(context).translate('Add Product Button'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         ),
-        child: Text(
-          AppLocalizations.of(context).translate('Add Product Button'),
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
+      );
+    });
   }
 }
