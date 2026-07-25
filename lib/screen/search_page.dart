@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/products/controllers/product_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/category_products.dart';
@@ -19,6 +20,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   late final ProductController _productController;
+  late final CustomerController _customerController;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -129,6 +131,15 @@ class _SearchPageState extends State<SearchPage> {
     _productController = Get.isRegistered<ProductController>()
         ? Get.find<ProductController>()
         : Get.put(ProductController());
+
+    _customerController = Get.isRegistered<CustomerController>()
+        ? Get.find<CustomerController>()
+        : Get.put(CustomerController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshCustomerData();
+    });
   }
 
   @override
@@ -234,7 +245,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int?>(
-                      value: tempCategoryId,
+                      initialValue: tempCategoryId,
                       dropdownColor: isDarkMode
                           ? AppTheme.cardBackground
                           : Colors.white,
@@ -335,7 +346,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: tempGovernorate,
+                      initialValue: tempGovernorate,
                       dropdownColor: isDarkMode
                           ? AppTheme.cardBackground
                           : Colors.white,
@@ -522,7 +533,7 @@ class _SearchPageState extends State<SearchPage> {
         hintText: hint,
         hintStyle: TextStyle(
           color: isDarkMode
-              ? AppTheme.textSecondary.withOpacity(0.5)
+              ? AppTheme.textSecondary.withValues(alpha: 0.5)
               : AppTheme.textLight,
           fontSize: 12,
         ),
@@ -533,6 +544,174 @@ class _SearchPageState extends State<SearchPage> {
           borderSide: BorderSide.none,
         ),
       ),
+    );
+  }
+
+  List<ProductModel> _visibleProducts(Iterable<ProductModel> products) {
+    return products
+        .where(
+          (ProductModel product) => product.isActive && product.quantity > 0,
+        )
+        .toList();
+  }
+
+  bool _isProductAvailable(ProductModel product) {
+    return product.isActive && product.quantity > 0;
+  }
+
+  Future<void> _refreshCustomerData() async {
+    await Future.wait<bool>([
+      _customerController.fetchFavoriteProducts(refresh: true),
+      _customerController.fetchCart(),
+    ]);
+  }
+
+  Future<void> _refreshCurrentResults() async {
+    final String cleanedQuery = _searchQuery.trim();
+
+    if (cleanedQuery.isNotEmpty) {
+      await _productController.searchProductsByProductUrl(query: cleanedQuery);
+    } else if (_isFilterMode) {
+      await _productController.filterProducts(
+        categoryId: _selectedFilterCategoryId,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice,
+        governorate: _selectedGovernorate,
+        refresh: true,
+      );
+    }
+
+    await _refreshCustomerData();
+  }
+
+  Future<void> _openProductDetails(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: product.quantity <= 0
+            ? 'نفدت كمية هذا المنتج'
+            : 'أوقف البائع عرض هذا المنتج',
+        isError: true,
+      );
+
+      await _refreshCurrentResults();
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailsPage(product: _productToMap(product)),
+      ),
+    );
+
+    if (!mounted) return;
+
+    await _refreshCurrentResults();
+  }
+
+  Future<void> _toggleFavorite(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: 'لا يمكن تعديل المفضلة لمنتج غير متوفر',
+        isError: true,
+      );
+      await _refreshCurrentResults();
+      return;
+    }
+
+    final bool wasFavorite = _customerController.isFavorite(product.id);
+
+    final bool success = await _customerController.toggleFavorite(
+      product: product,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        title: 'فشل العملية',
+        message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
+            ? _customerController.favoriteActionErrorMessage.value
+            : 'تعذر تعديل المفضلة',
+        isError: true,
+      );
+      return;
+    }
+
+    _showSnackBar(
+      title: 'نجاح',
+      message: wasFavorite
+          ? 'تم حذف المنتج من المفضلة'
+          : 'تمت إضافة المنتج إلى المفضلة',
+      isError: false,
+    );
+  }
+
+  Future<void> _addProductToCart(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: product.quantity <= 0
+            ? 'نفدت كمية هذا المنتج'
+            : 'أوقف البائع عرض هذا المنتج',
+        isError: true,
+      );
+      await _refreshCurrentResults();
+      return;
+    }
+
+    final existingItem = _customerController.findCartItemByProductId(
+      product.id,
+    );
+
+    if (existingItem != null && existingItem.quantity >= product.quantity) {
+      _showSnackBar(
+        title: 'الكمية غير متاحة',
+        message: 'لديك في السلة كامل الكمية المتوفرة: ${product.quantity}',
+        isError: true,
+      );
+      return;
+    }
+
+    final bool success = await _customerController.addCartItem(
+      productId: product.id,
+      quantity: 1,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        title: 'فشل الإضافة',
+        message: _customerController.addCartItemErrorMessage.value.isNotEmpty
+            ? _customerController.addCartItemErrorMessage.value
+            : 'تعذر إضافة المنتج إلى السلة',
+        isError: true,
+      );
+      return;
+    }
+
+    _showSnackBar(
+      title: 'تمت الإضافة',
+      message: 'تمت إضافة المنتج إلى السلة',
+      isError: false,
+    );
+  }
+
+  void _showSnackBar({
+    required String title,
+    required String message,
+    required bool isError,
+  }) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError ? Colors.red : Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
     );
   }
 
@@ -555,7 +734,7 @@ class _SearchPageState extends State<SearchPage> {
       'created_at': product.createdAt,
       'updated_at': product.updatedAt,
       'icon': Icons.image_outlined,
-      'fav': false,
+      'fav': _customerController.isFavorite(product.id),
       'rating': 0.0,
       'sold': 0,
       'sellerRating': 0.0,
@@ -585,6 +764,10 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchResults(bool isDarkMode) {
     return Obx(() {
+      final List<ProductModel> visibleProducts = _visibleProducts(
+        _productController.searchProducts,
+      );
+
       if (_productController.isSearchLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
@@ -597,23 +780,68 @@ class _SearchPageState extends State<SearchPage> {
         );
       }
 
-      if (_productController.searchProducts.isEmpty) {
-        return _buildMessageState(
-          isDarkMode: isDarkMode,
-          message: 'لا توجد نتائج لهذا الرابط',
-          icon: Icons.search_off_rounded,
+      if (visibleProducts.isEmpty) {
+        final bool hiddenByAvailability =
+            _productController.searchProducts.isNotEmpty;
+
+        return RefreshIndicator(
+          onRefresh: _refreshCurrentResults,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: MediaQuery.sizeOf(context).height * 0.55,
+                child: _buildMessageState(
+                  isDarkMode: isDarkMode,
+                  message: hiddenByAvailability
+                      ? 'تم العثور على المنتج، لكنه نافد أو غير متاح للبيع'
+                      : 'لا توجد نتائج لهذا الرابط',
+                  icon: hiddenByAvailability
+                      ? Icons.inventory_2_outlined
+                      : Icons.search_off_rounded,
+                ),
+              ),
+            ],
+          ),
         );
       }
 
-      return _buildProductsGrid(
-        products: _productController.searchProducts,
-        isDarkMode: isDarkMode,
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'النتائج المتاحة: ${visibleProducts.length}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshCurrentResults,
+              child: _buildProductsGrid(
+                products: visibleProducts,
+                isDarkMode: isDarkMode,
+              ),
+            ),
+          ),
+        ],
       );
     });
   }
 
   Widget _buildFilteredResults(bool isDarkMode) {
     return Obx(() {
+      final List<ProductModel> visibleProducts = _visibleProducts(
+        _productController.filteredProducts,
+      );
+
       if (_productController.isFilterLoading.value &&
           _productController.filteredProducts.isEmpty) {
         return const Center(child: CircularProgressIndicator());
@@ -625,14 +853,6 @@ class _SearchPageState extends State<SearchPage> {
           isDarkMode: isDarkMode,
           message: _productController.filterErrorMessage.value,
           icon: Icons.error_outline_rounded,
-        );
-      }
-
-      if (_productController.filteredProducts.isEmpty) {
-        return _buildMessageState(
-          isDarkMode: isDarkMode,
-          message: 'لا توجد منتجات مطابقة للفلترة',
-          icon: Icons.filter_alt_off_rounded,
         );
       }
 
@@ -663,7 +883,7 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                 ),
                 Text(
-                  'النتائج: ${_productController.filterTotal.value}',
+                  'النتائج المتاحة: ${visibleProducts.length}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -676,10 +896,35 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
           Expanded(
-            child: _buildProductsGrid(
-              products: _productController.filteredProducts,
-              isDarkMode: isDarkMode,
-            ),
+            child: visibleProducts.isEmpty
+                ? RefreshIndicator(
+                    onRefresh: _refreshCurrentResults,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.5,
+                          child: _buildMessageState(
+                            isDarkMode: isDarkMode,
+                            message:
+                                _productController.filteredProducts.isNotEmpty
+                                ? 'المنتجات المطابقة نافدة أو غير متاحة للبيع'
+                                : 'لا توجد منتجات مطابقة للفلترة',
+                            icon: _productController.filteredProducts.isNotEmpty
+                                ? Icons.inventory_2_outlined
+                                : Icons.filter_alt_off_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _refreshCurrentResults,
+                    child: _buildProductsGrid(
+                      products: visibleProducts,
+                      isDarkMode: isDarkMode,
+                    ),
+                  ),
           ),
         ],
       );
@@ -723,6 +968,7 @@ class _SearchPageState extends State<SearchPage> {
     required bool isDarkMode,
   }) {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -743,148 +989,319 @@ class _SearchPageState extends State<SearchPage> {
     final Color activePrimary = isDarkMode
         ? AppTheme.accentBlue
         : AppTheme.primary;
+    final bool isFavorite = _customerController.isFavorite(product.id);
+
+    final bool isChangingFavorite =
+        _customerController.isChangingFavorite.value &&
+        _customerController.changingFavoriteProductId.value == product.id;
+
+    final bool isAddingToCart =
+        _customerController.isAddingCartItem.value &&
+        _customerController.addingCartProductId.value == product.id;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProductDetailsPage(product: _productToMap(product)),
-          ),
-        );
-      },
+      onTap: () => _openProductDetails(product),
       child: Container(
         decoration: BoxDecoration(
           color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDarkMode ? AppTheme.inputFieldBg : Colors.transparent,
+            color: isDarkMode
+                ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
+                : Colors.transparent,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.06),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Container(
-                height: 95,
-                width: double.infinity,
-                color: isDarkMode
-                    ? AppTheme.darkBackground
-                    : AppTheme.background.withOpacity(0.5),
-                child: product.fullImageUrl.isEmpty
-                    ? Icon(Icons.image_outlined, size: 42, color: activePrimary)
-                    : Image.network(
-                        product.fullImageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 95,
-                        errorBuilder: (_, __, ___) {
-                          return Icon(
-                            Icons.broken_image_outlined,
-                            size: 42,
-                            color: activePrimary,
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-
-                          return Center(
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+            Column(
+              crossAxisAlignment: _isArabic()
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: Container(
+                    height: 95,
+                    width: double.infinity,
+                    color: isDarkMode
+                        ? AppTheme.darkBackground
+                        : AppTheme.background.withValues(alpha: 0.5),
+                    child: _buildProductImage(
+                      product,
+                      isDarkMode,
+                      activePrimary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: _isArabic()
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          product.title.isNotEmpty
+                              ? product.title
+                              : 'منتج بدون اسم',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? AppTheme.textPrimary
+                                : AppTheme.textDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Row(
+                          mainAxisAlignment: _isArabic()
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            if (!_isArabic())
+                              Icon(
+                                Icons.location_on,
+                                size: 11,
                                 color: activePrimary,
                               ),
+                            Expanded(
+                              child: Text(
+                                product.governorate.isNotEmpty
+                                    ? product.governorate
+                                    : 'غير متوفر',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDarkMode
+                                      ? AppTheme.textSecondary
+                                      : AppTheme.textLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: _isArabic()
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                              ),
                             ),
-                          );
-                        },
-                      ),
-              ),
+                            if (_isArabic())
+                              Icon(
+                                Icons.location_on,
+                                size: 11,
+                                color: activePrimary,
+                              ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: _isArabic()
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            if (!_isArabic())
+                              const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 11,
+                                color: Colors.orange,
+                              ),
+                            if (!_isArabic()) const SizedBox(width: 3),
+                            Text(
+                              product.quantity.toString(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                'الكمية المتوفرة',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDarkMode
+                                      ? AppTheme.textSecondary
+                                      : AppTheme.textLight,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: _isArabic()
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                              ),
+                            ),
+                            if (_isArabic()) const SizedBox(width: 3),
+                            if (_isArabic())
+                              const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 11,
+                                color: Colors.orange,
+                              ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: isAddingToCart
+                                  ? null
+                                  : () => _addProductToCart(product),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? AppTheme.selectedBorder
+                                      : AppTheme.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: isAddingToCart
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(7),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: isDarkMode
+                                              ? AppTheme.darkBackground
+                                              : Colors.white,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.add_shopping_cart,
+                                        color: isDarkMode
+                                            ? AppTheme.darkBackground
+                                            : Colors.white,
+                                        size: 14,
+                                      ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                if (!_isArabic())
+                                  Text(
+                                    _formatPrice(product.price),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: activePrimary,
+                                    ),
+                                  ),
+                                Text(
+                                  ' ${AppLocalizations.of(context).translate('currency')} ',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_isArabic())
+                                  Text(
+                                    _formatPrice(product.price),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: activePrimary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      product.title.isNotEmpty
-                          ? product.title
-                          : 'منتج بدون اسم',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode
-                            ? AppTheme.textPrimary
-                            : AppTheme.textDark,
+            Positioned(
+              top: 8,
+              left: 8,
+              child: GestureDetector(
+                onTap: isChangingFavorite
+                    ? null
+                    : () => _toggleFavorite(product),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? AppTheme.inputFieldBg : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
                       ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            product.governorate.isNotEmpty
-                                ? product.governorate
-                                : 'غير متوفر',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isDarkMode
-                                  ? AppTheme.textSecondary
-                                  : AppTheme.textLight,
-                            ),
+                    ],
+                  ),
+                  child: isChangingFavorite
+                      ? const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red,
                           ),
+                        )
+                      : Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                          size: 14,
                         ),
-                        const SizedBox(width: 3),
-                        Icon(Icons.location_on, size: 11, color: activePrimary),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).translate('currency'),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          _formatPrice(product.price),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: activePrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProductImage(
+    ProductModel product,
+    bool isDarkMode,
+    Color activePrimary,
+  ) {
+    if (product.fullImageUrl.isEmpty) {
+      return Icon(
+        Icons.image_outlined,
+        size: 48,
+        color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
+      );
+    }
+
+    return Image.network(
+      product.fullImageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: 95,
+      errorBuilder: (_, __, ___) {
+        return Icon(
+          Icons.broken_image_outlined,
+          size: 44,
+          color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
+        );
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: activePrimary,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -942,7 +1359,9 @@ class _SearchPageState extends State<SearchPage> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.02),
+                  color: Colors.black.withValues(
+                    alpha: isDarkMode ? 0.15 : 0.02,
+                  ),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -971,8 +1390,8 @@ class _SearchPageState extends State<SearchPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: finalIconColor.withOpacity(
-                            isDarkMode ? 0.18 : 0.1,
+                          color: finalIconColor.withValues(
+                            alpha: isDarkMode ? 0.18 : 0.1,
                           ),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -987,8 +1406,8 @@ class _SearchPageState extends State<SearchPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: finalIconColor.withOpacity(
-                            isDarkMode ? 0.18 : 0.1,
+                          color: finalIconColor.withValues(
+                            alpha: isDarkMode ? 0.18 : 0.1,
                           ),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -1080,7 +1499,7 @@ class _SearchPageState extends State<SearchPage> {
                       hintText: 'ابحث برابط المنتج',
                       hintStyle: TextStyle(
                         color: isDarkMode
-                            ? AppTheme.textSecondary.withOpacity(0.5)
+                            ? AppTheme.textSecondary.withValues(alpha: 0.5)
                             : AppTheme.textLight,
                         fontSize: 14,
                       ),
@@ -1163,4 +1582,6 @@ class _SearchPageState extends State<SearchPage> {
       ),
     );
   }
+
+  bool _isArabic() => Localizations.localeOf(context).languageCode == 'ar';
 }

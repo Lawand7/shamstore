@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
-import '../../../core/storage/token_storage.dart';
-import '../repositories/auth_repository.dart';
+import 'package:shamstore/core/storage/token_storage.dart';
+import 'package:shamstore/features/auth/repositories/auth_repository.dart';
+import 'package:shamstore/features/notifications/controllers/notifications_controller.dart';
 
 class LoginController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
@@ -10,148 +11,238 @@ class LoginController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
       final result = await _authRepository.login(
-        email: email,
+        email: email.trim(),
         password: password,
       );
 
-      debugPrint('========== LOGIN RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('====================================');
+      if (kDebugMode) {
+        debugPrint('========== LOGIN RESPONSE ==========');
+        debugPrint(result.toString());
+        debugPrint('====================================');
+      }
 
-      final token = _readString(result, 'token') ??
-          _readString(result, 'access_token');
+      final token = _readFirstString(result, const ['token', 'access_token']);
 
       if (token == null || token.isEmpty) {
-        errorMessage.value = 'لم يتم العثور على التوكن في استجابة السيرفر';
+        errorMessage.value =
+            'لم يتم العثور على رمز تسجيل الدخول في استجابة السيرفر';
         return false;
       }
 
-      await TokenStorage.saveToken(token);
-      await TokenStorage.saveUserEmail(email);
+      /*
+       * هذه الخطوة تمسح كاش الحساب السابق فقط.
+       * لا تحذف إشعارات أو بيانات من Laravel.
+       */
+      await _resetPreviousLocalAccount();
 
       final userMap = _extractUserMap(result);
       final profileMap = _extractProfileMap(result);
 
-      final role = userMap != null
-          ? _readString(userMap, 'role')
-          : _readString(result, 'role');
+      await TokenStorage.saveToken(token);
+      await TokenStorage.saveUserEmail(email);
 
-      if (role != null && role.isNotEmpty) {
+      final role = _readFirstString(userMap ?? result, const [
+        'role',
+        'user_role',
+      ]);
+
+      if (role != null) {
         await TokenStorage.saveUserRole(role);
       }
 
-      final userId = userMap != null
-          ? _toInt(userMap['id'])
-          : _toInt(result['user_id'] ?? result['id']);
+      final userId = _toInt(
+        userMap?['id'] ??
+            userMap?['user_id'] ??
+            result['user_id'] ??
+            result['id'],
+      );
 
       if (userId != null) {
         await TokenStorage.saveUserId(userId);
       }
 
-      if (profileMap != null) {
-        await TokenStorage.saveProfileData(
-          firstName: _readString(profileMap, 'first_name'),
-          lastName: _readString(profileMap, 'last_name'),
-          governorate: _readString(profileMap, 'governorate'),
-          dateOfBirth: _readString(profileMap, 'date_of_birth'),
-          profileImageUrl: _readString(profileMap, 'profile_image_url'),
-          identityImageUrl: _readString(profileMap, 'identity_image_url'),
-        );
+      /*
+       * بعض استجابات الباك تضع بيانات الملف الشخصي داخل profile،
+       * وبعضها قد يضعها مباشرة داخل user؛ لذلك نقرأ من الاثنين.
+       */
+      final profileSource = <String, dynamic>{
+        if (userMap != null) ...userMap,
+        if (profileMap != null) ...profileMap,
+      };
+
+      await TokenStorage.saveProfileData(
+        firstName: _readFirstString(profileSource, const [
+          'first_name',
+          'firstname',
+        ]),
+        lastName: _readFirstString(profileSource, const [
+          'last_name',
+          'lastname',
+        ]),
+        governorate: _readFirstString(profileSource, const [
+          'governorate',
+          'city',
+        ]),
+        dateOfBirth: _readFirstString(profileSource, const [
+          'date_of_birth',
+          'birth_date',
+        ]),
+        profileImageUrl: _readFirstString(profileSource, const [
+          'profile_image_url',
+          'profile_image',
+          'image',
+          'avatar',
+        ]),
+        identityImageUrl: _readFirstString(profileSource, const [
+          'identity_image_url',
+          'identity_image',
+          'identity_imag',
+        ]),
+        replaceExisting: true,
+      );
+
+      if (kDebugMode) {
+        debugPrint('========== SAVED LOGIN DATA ==========');
+        debugPrint('Token saved: ${TokenStorage.getToken() != null}');
+        debugPrint('Email: ${TokenStorage.getUserEmail()}');
+        debugPrint('User ID: ${TokenStorage.getUserId()}');
+        debugPrint('Role: ${TokenStorage.getUserRole()}');
+        debugPrint('Display name: ${TokenStorage.getDisplayName()}');
+        debugPrint('DOB: ${TokenStorage.getProfileDateOfBirth()}');
+        debugPrint('Governorate: ${TokenStorage.getProfileGovernorate()}');
+        debugPrint('Profile image: ${TokenStorage.getProfileImageUrl()}');
+        debugPrint('Identity image: ${TokenStorage.getIdentityImageUrl()}');
+        debugPrint('======================================');
       }
 
-      debugPrint('========== SAVED LOGIN DATA ==========');
-      debugPrint('Token saved: ${TokenStorage.getToken() != null}');
-      debugPrint('Email: ${TokenStorage.getUserEmail()}');
-      debugPrint('User ID: ${TokenStorage.getUserId()}');
-      debugPrint('Role: ${TokenStorage.getUserRole()}');
-      debugPrint('First name: ${TokenStorage.getProfileFirstName()}');
-      debugPrint('Last name: ${TokenStorage.getProfileLastName()}');
-      debugPrint('DOB: ${TokenStorage.getProfileDateOfBirth()}');
-      debugPrint('Governorate: ${TokenStorage.getProfileGovernorate()}');
-      debugPrint('Profile image: ${TokenStorage.getProfileImageUrl()}');
-      debugPrint('Identity image: ${TokenStorage.getIdentityImageUrl()}');
-      debugPrint('======================================');
-
       return true;
-    } catch (e) {
-      errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Login error: $e');
+    } catch (error) {
+      errorMessage.value = _cleanErrorMessage(error);
+
+      if (kDebugMode) {
+        debugPrint('Login error: $error');
+      }
+
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
+  Future<void> _resetPreviousLocalAccount() async {
+    if (Get.isRegistered<NotificationsController>()) {
+      final controller = Get.find<NotificationsController>();
+
+      controller.notifications.clear();
+      controller.currentPage.value = 1;
+      controller.lastPage.value = 1;
+      controller.total.value = 0;
+
+      Get.delete<NotificationsController>(force: true);
+    }
+
+    await TokenStorage.clear();
+  }
+
   Map<String, dynamic>? _extractUserMap(Map<String, dynamic> response) {
-    final user = response['user'];
+    final directUser = _asMap(response['user']);
 
-    if (user is Map<String, dynamic>) {
-      return user;
+    if (directUser != null) {
+      return directUser;
     }
 
-    final data = response['data'];
-    if (data is Map<String, dynamic> && data['user'] is Map<String, dynamic>) {
-      return data['user'] as Map<String, dynamic>;
+    final data = _asMap(response['data']);
+
+    if (data == null) {
+      return null;
     }
 
-    return null;
+    return _asMap(data['user']) ?? data;
   }
 
   Map<String, dynamic>? _extractProfileMap(Map<String, dynamic> response) {
-    final profile = response['profile'];
+    final directProfile = _asMap(response['profile']);
 
-    if (profile is Map<String, dynamic>) {
-      return profile;
+    if (directProfile != null) {
+      return directProfile;
     }
 
-    final data = response['data'];
-    if (data is Map<String, dynamic>) {
-      if (data['profile'] is Map<String, dynamic>) {
-        return data['profile'] as Map<String, dynamic>;
+    final data = _asMap(response['data']);
+
+    if (data != null) {
+      final dataProfile = _asMap(data['profile']);
+
+      if (dataProfile != null) {
+        return dataProfile;
       }
 
-      if (data['user'] is Map<String, dynamic>) {
-        final user = data['user'] as Map<String, dynamic>;
-        if (user['profile'] is Map<String, dynamic>) {
-          return user['profile'] as Map<String, dynamic>;
-        }
+      final dataUser = _asMap(data['user']);
+      final nestedProfile = _asMap(dataUser?['profile']);
+
+      if (nestedProfile != null) {
+        return nestedProfile;
       }
     }
 
-    final user = response['user'];
-    if (user is Map<String, dynamic> && user['profile'] is Map<String, dynamic>) {
-      return user['profile'] as Map<String, dynamic>;
+    final directUser = _asMap(response['user']);
+
+    return _asMap(directUser?['profile']);
+  }
+
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
     }
 
     return null;
   }
 
-  String? _readString(Map<String, dynamic> map, String key) {
-    final value = map[key];
+  String? _readFirstString(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final value = map[key];
+      final text = value?.toString().trim() ?? '';
 
-    if (value == null) return null;
+      if (text.isNotEmpty && text.toLowerCase() != 'null') {
+        return text;
+      }
+    }
 
-    final text = value.toString().trim();
-
-    return text.isEmpty ? null : text;
+    return null;
   }
 
   int? _toInt(dynamic value) {
-    if (value == null) return null;
+    if (value is int) {
+      return value;
+    }
 
-    if (value is int) return value;
+    if (value is num) {
+      return value.toInt();
+    }
 
-    if (value is double) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
 
-    return int.tryParse(value.toString());
+  String _cleanErrorMessage(Object error) {
+    final message = error.toString().trim();
+
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length).trim();
+    }
+
+    if (message.isEmpty) {
+      return 'حدث خطأ غير متوقع أثناء تسجيل الدخول';
+    }
+
+    return message;
   }
 }

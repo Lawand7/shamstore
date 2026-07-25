@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/products/controllers/product_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
@@ -23,9 +24,9 @@ class CategoryProductsPage extends StatefulWidget {
 
 class _CategoryProductsPageState extends State<CategoryProductsPage> {
   late final ProductController _productController;
-  final ScrollController _scrollController = ScrollController();
+  late final CustomerController _customerController;
 
-  final Set<int> _favoriteProductIds = <int>{};
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -35,10 +36,14 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
         ? Get.find<ProductController>()
         : Get.put(ProductController());
 
-    _productController.fetchProductsByCategory(
-      categoryId: widget.categoryId,
-      refresh: true,
-    );
+    _customerController = Get.isRegistered<CustomerController>()
+        ? Get.find<CustomerController>()
+        : Get.put(CustomerController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadInitialData();
+    });
 
     _scrollController.addListener(_onScroll);
   }
@@ -61,11 +66,36 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     }
   }
 
+  Future<void> _loadInitialData() async {
+    await _refreshAll();
+  }
+
   Future<void> _refreshProducts() async {
     await _productController.fetchProductsByCategory(
       categoryId: widget.categoryId,
       refresh: true,
     );
+  }
+
+  Future<void> _refreshAll() async {
+    await _refreshProducts();
+
+    await Future.wait<bool>([
+      _customerController.fetchFavoriteProducts(refresh: true),
+      _customerController.fetchCart(),
+    ]);
+  }
+
+  List<ProductModel> get _visibleProducts {
+    return _productController.categoryProducts
+        .where(
+          (ProductModel product) => product.isActive && product.quantity > 0,
+        )
+        .toList();
+  }
+
+  bool _isProductAvailable(ProductModel product) {
+    return product.isActive && product.quantity > 0;
   }
 
   Map<String, dynamic> _productToMap(ProductModel product) {
@@ -87,7 +117,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
       'created_at': product.createdAt,
       'updated_at': product.updatedAt,
       'icon': Icons.image_outlined,
-      'fav': _favoriteProductIds.contains(product.id),
+      'fav': _customerController.isFavorite(product.id),
       'rating': 0.0,
       'sold': 0,
       'sellerRating': 0.0,
@@ -101,6 +131,137 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     }
 
     return value.toStringAsFixed(2);
+  }
+
+  Future<void> _openProductDetails(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: product.quantity <= 0
+            ? 'نفدت كمية هذا المنتج'
+            : 'أوقف البائع عرض هذا المنتج',
+        isError: true,
+      );
+
+      await _refreshProducts();
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailsPage(product: _productToMap(product)),
+      ),
+    );
+
+    if (!mounted) return;
+
+    await _refreshAll();
+  }
+
+  Future<void> _toggleFavorite(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: 'لا يمكن تعديل المفضلة لمنتج غير متوفر',
+        isError: true,
+      );
+      await _refreshProducts();
+      return;
+    }
+
+    final bool wasFavorite = _customerController.isFavorite(product.id);
+
+    final bool success = await _customerController.toggleFavorite(
+      product: product,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        title: 'فشل العملية',
+        message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
+            ? _customerController.favoriteActionErrorMessage.value
+            : 'تعذر تعديل المفضلة',
+        isError: true,
+      );
+      return;
+    }
+
+    _showSnackBar(
+      title: 'نجاح',
+      message: wasFavorite
+          ? 'تم حذف المنتج من المفضلة'
+          : 'تمت إضافة المنتج إلى المفضلة',
+      isError: false,
+    );
+  }
+
+  Future<void> _addProductToCart(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showSnackBar(
+        title: 'المنتج غير متاح',
+        message: product.quantity <= 0
+            ? 'نفدت كمية هذا المنتج'
+            : 'أوقف البائع عرض هذا المنتج',
+        isError: true,
+      );
+      await _refreshProducts();
+      return;
+    }
+
+    final existingItem = _customerController.findCartItemByProductId(
+      product.id,
+    );
+
+    if (existingItem != null && existingItem.quantity >= product.quantity) {
+      _showSnackBar(
+        title: 'الكمية غير متاحة',
+        message: 'لديك في السلة كامل الكمية المتوفرة: ${product.quantity}',
+        isError: true,
+      );
+      return;
+    }
+
+    final bool success = await _customerController.addCartItem(
+      productId: product.id,
+      quantity: 1,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        title: 'فشل الإضافة',
+        message: _customerController.addCartItemErrorMessage.value.isNotEmpty
+            ? _customerController.addCartItemErrorMessage.value
+            : 'تعذر إضافة المنتج إلى السلة',
+        isError: true,
+      );
+      return;
+    }
+
+    _showSnackBar(
+      title: 'تمت الإضافة',
+      message: 'تمت إضافة المنتج إلى السلة',
+      isError: false,
+    );
+  }
+
+  void _showSnackBar({
+    required String title,
+    required String message,
+    required bool isError,
+  }) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError ? Colors.red : Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+    );
   }
 
   @override
@@ -117,7 +278,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
             _buildHeader(isDarkMode),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _refreshProducts,
+                onRefresh: _refreshAll,
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -154,7 +315,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -191,7 +352,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
-              onPressed: _refreshProducts,
+              onPressed: _refreshAll,
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
@@ -205,7 +366,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
               ),
             ),
             Text(
-              'عدد المنتجات: ${_productController.categoryTotal.value}',
+              'المنتجات المتاحة: ${_visibleProducts.length}',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -220,6 +381,8 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
 
   Widget _buildProductsSliver(bool isDarkMode) {
     return Obx(() {
+      final List<ProductModel> visibleProducts = _visibleProducts;
+
       if (_productController.isCategoryLoading.value &&
           _productController.categoryProducts.isEmpty) {
         return const SliverToBoxAdapter(
@@ -240,11 +403,15 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
         );
       }
 
-      if (_productController.categoryProducts.isEmpty) {
+      if (visibleProducts.isEmpty) {
         return SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: _buildEmptyState(isDarkMode),
+            child: _buildEmptyState(
+              isDarkMode,
+              allProductsUnavailable:
+                  _productController.categoryProducts.isNotEmpty,
+            ),
           ),
         );
       }
@@ -253,10 +420,10 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverGrid(
           delegate: SliverChildBuilderDelegate((context, index) {
-            final product = _productController.categoryProducts[index];
+            final ProductModel product = visibleProducts[index];
 
             return _buildProductCard(product, isDarkMode);
-          }, childCount: _productController.categoryProducts.length),
+          }, childCount: visibleProducts.length),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 12,
@@ -334,7 +501,10 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     );
   }
 
-  Widget _buildEmptyState(bool isDarkMode) {
+  Widget _buildEmptyState(
+    bool isDarkMode, {
+    required bool allProductsUnavailable,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -354,7 +524,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            'لا توجد منتجات في هذا التصنيف',
+            allProductsUnavailable
+                ? 'لا توجد منتجات متاحة حالياً'
+                : 'لا توجد منتجات في هذا التصنيف',
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 14,
@@ -363,7 +535,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'اسحب للأسفل لتحديث القائمة',
+            allProductsUnavailable
+                ? 'المنتجات الموجودة نافدة أو أوقف البائع عرضها'
+                : 'اسحب للأسفل لتحديث القائمة',
             style: TextStyle(
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
               fontSize: 12,
@@ -378,29 +552,30 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     final Color activePrimary = isDarkMode
         ? AppTheme.accentBlue
         : AppTheme.primary;
-    final bool isFavorite = _favoriteProductIds.contains(product.id);
+    final bool isFavorite = _customerController.isFavorite(product.id);
+
+    final bool isChangingFavorite =
+        _customerController.isChangingFavorite.value &&
+        _customerController.changingFavoriteProductId.value == product.id;
+
+    final bool isAddingToCart =
+        _customerController.isAddingCartItem.value &&
+        _customerController.addingCartProductId.value == product.id;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProductDetailsPage(product: _productToMap(product)),
-          ),
-        );
-      },
+      onTap: () => _openProductDetails(product),
       child: Container(
         decoration: BoxDecoration(
           color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDarkMode
-                ? AppTheme.inputFieldBg.withOpacity(0.5)
+                ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
                 : Colors.transparent,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.06),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -422,7 +597,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                     width: double.infinity,
                     color: isDarkMode
                         ? AppTheme.darkBackground
-                        : AppTheme.background.withOpacity(0.5),
+                        : AppTheme.background.withValues(alpha: 0.5),
                     child: _buildProductImage(
                       product,
                       isDarkMode,
@@ -540,21 +715,36 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? AppTheme.selectedBorder
-                                    : AppTheme.primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.add_shopping_cart,
-                                color: isDarkMode
-                                    ? AppTheme.darkBackground
-                                    : Colors.white,
-                                size: 14,
+                            GestureDetector(
+                              onTap: isAddingToCart
+                                  ? null
+                                  : () => _addProductToCart(product),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? AppTheme.selectedBorder
+                                      : AppTheme.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: isAddingToCart
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(7),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: isDarkMode
+                                              ? AppTheme.darkBackground
+                                              : Colors.white,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.add_shopping_cart,
+                                        color: isDarkMode
+                                            ? AppTheme.darkBackground
+                                            : Colors.white,
+                                        size: 14,
+                                      ),
                               ),
                             ),
                             Row(
@@ -598,15 +788,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
               top: 8,
               left: 8,
               child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (isFavorite) {
-                      _favoriteProductIds.remove(product.id);
-                    } else {
-                      _favoriteProductIds.add(product.id);
-                    }
-                  });
-                },
+                onTap: isChangingFavorite
+                    ? null
+                    : () => _toggleFavorite(product),
                 child: Container(
                   width: 28,
                   height: 28,
@@ -615,16 +799,24 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                       ),
                     ],
                   ),
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.red,
-                    size: 14,
-                  ),
+                  child: isChangingFavorite
+                      ? const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red,
+                          ),
+                        )
+                      : Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                          size: 14,
+                        ),
                 ),
               ),
             ),
@@ -643,7 +835,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
       return Icon(
         Icons.image_outlined,
         size: 48,
-        color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+        color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
       );
     }
 
@@ -656,7 +848,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
         return Icon(
           Icons.broken_image_outlined,
           size: 44,
-          color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+          color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
         );
       },
       loadingBuilder: (context, child, loadingProgress) {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:shamstore/core/constants/api_constants.dart';
 import 'package:shamstore/core/storage/token_storage.dart';
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
+import 'package:shamstore/features/notifications/controllers/notifications_controller.dart';
 import 'package:shamstore/features/products/controllers/product_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/add_ad_page.dart';
@@ -18,6 +20,7 @@ import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/screen/profile_page.dart';
 import 'package:shamstore/screen/search_page.dart';
+import 'package:shamstore/screen/seller_orders_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -35,6 +38,7 @@ class _HomePageState extends State<HomePage> {
 
   late final ProductController _productController;
   late final CustomerController _customerController;
+  late final NotificationsController _notificationsController;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -106,6 +110,10 @@ class _HomePageState extends State<HomePage> {
         ? Get.find<CustomerController>()
         : Get.put(CustomerController());
 
+    _notificationsController = Get.isRegistered<NotificationsController>()
+        ? Get.find<NotificationsController>()
+        : Get.put(NotificationsController());
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadInitialData();
@@ -122,6 +130,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadInitialData() async {
+    await _refreshNotifications();
     await _refreshProducts();
 
     if (_isBuyer) {
@@ -158,12 +167,82 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _refreshHomeData() async {
+    await _refreshNotifications();
     await _refreshProducts();
 
     if (_isBuyer) {
       await _refreshFavorites();
       await _refreshCart();
     }
+  }
+
+  Future<void> _refreshNotifications() async {
+    await _notificationsController.refreshNotifications();
+
+    /*
+     * لا يوجد في الباك Endpoint مستقل لعدد غير المقروء.
+     * لذلك نحمّل الصفحات المتبقية حتى يكون رقم الجرس دقيقاً،
+     * وليس محسوباً من أول 20 إشعاراً فقط.
+     */
+    while (_notificationsController.hasMore) {
+      final loaded = await _notificationsController.fetchNotifications(
+        refresh: false,
+      );
+
+      if (!loaded) {
+        break;
+      }
+    }
+  }
+
+  Future<void> _openNotificationsPage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsPage()),
+    );
+
+    if (!mounted) return;
+
+    await _refreshNotifications();
+  }
+
+  Future<void> _openProfilePage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProfilePage(isBuyer: _isBuyer)),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      // إعادة قراءة الاسم والصورة من TokenStorage بعد تعديل الملف الشخصي.
+    });
+  }
+
+  String get _displayName => TokenStorage.getDisplayName();
+
+  String get _profileImageUrl {
+    final raw = TokenStorage.getProfileImageUrl()?.trim() ?? '';
+
+    if (raw.isEmpty) {
+      return '';
+    }
+
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return raw;
+    }
+
+    final serverBase = ApiConstants.baseUrl
+        .replaceFirst(RegExp(r'/api/?$'), '')
+        .replaceAll(RegExp(r'/$'), '');
+
+    final cleanPath = raw
+        .replaceAll(r'\', '/')
+        .replaceFirst(RegExp(r'^/+'), '')
+        .replaceFirst(RegExp(r'^public/storage/'), '')
+        .replaceFirst(RegExp(r'^storage/'), '');
+
+    return '$serverBase/storage/$cleanPath';
   }
 
   Future<void> _openMyProductsPage() async {
@@ -357,18 +436,17 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsPage(),
-                    ),
+                onTap: _openNotificationsPage,
+                child: Obx(() {
+                  final count = _notificationsController.unreadCount;
+
+                  return _iconButton(
+                    Icons.notifications_none_outlined,
+                    badge: count <= 0
+                        ? null
+                        : (count > 99 ? '99+' : count.toString()),
                   );
-                },
-                child: _iconButton(
-                  Icons.notifications_none_outlined,
-                  badge: '3',
-                ),
+                }),
               ),
               const SizedBox(width: 8),
               if (_isBuyer)
@@ -393,7 +471,7 @@ class _HomePageState extends State<HomePage> {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -448,7 +526,7 @@ class _HomePageState extends State<HomePage> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -469,46 +547,75 @@ class _HomePageState extends State<HomePage> {
                     ? AppLocalizations.of(context).translate('seller_dashboard')
                     : AppLocalizations.of(context).translate('hello'),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.75),
+                  color: Colors.white.withValues(alpha: 0.75),
                   fontSize: 12,
                 ),
               ),
-              Text(
-                AppLocalizations.of(context).translate('user_name'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 170),
+                child: Text(
+                  _displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(width: 10),
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfilePage(isBuyer: _isBuyer),
-                ),
-              );
-            },
+            onTap: _openProfilePage,
             child: Container(
               width: 38,
               height: 38,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              child: _buildProfileAvatar(),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileAvatar() {
+    final imageUrl = _profileImageUrl;
+
+    if (imageUrl.isEmpty) {
+      return const Icon(Icons.person, color: Colors.white, size: 20);
+    }
+
+    return Image.network(
+      imageUrl,
+      key: ValueKey<String>(imageUrl),
+      width: 38,
+      height: 38,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) {
+        return const Icon(Icons.person, color: Colors.white, size: 20);
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+
+        return const Padding(
+          padding: EdgeInsets.all(10),
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+        );
+      },
     );
   }
 
@@ -520,28 +627,29 @@ class _HomePageState extends State<HomePage> {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: Colors.white, size: 20),
         ),
         if (badge != null)
           Positioned(
-            top: -4,
-            right: -4,
+            top: -5,
+            right: -5,
             child: Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(
+              constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
                 color: Colors.orange,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 1),
               ),
               child: Center(
                 child: Text(
                   badge,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 9,
+                    fontSize: 8.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -583,7 +691,7 @@ class _HomePageState extends State<HomePage> {
                 AppLocalizations.of(context).translate('search_hint'),
                 style: TextStyle(
                   color: isDarkMode
-                      ? AppTheme.textSecondary.withOpacity(0.6)
+                      ? AppTheme.textSecondary.withValues(alpha: 0.6)
                       : AppTheme.textLight,
                   fontSize: 13,
                 ),
@@ -637,9 +745,11 @@ class _HomePageState extends State<HomePage> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: activePrimary.withOpacity(0.1),
+                    color: activePrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: activePrimary.withOpacity(0.3)),
+                    border: Border.all(
+                      color: activePrimary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -700,7 +810,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+                      color: Colors.black.withValues(
+                        alpha: isDarkMode ? 0.15 : 0.05,
+                      ),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -774,8 +886,8 @@ class _HomePageState extends State<HomePage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: adFinalColor.withOpacity(
-                          isDarkMode ? 0.18 : 0.1,
+                        color: adFinalColor.withValues(
+                          alpha: isDarkMode ? 0.18 : 0.1,
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -1061,12 +1173,12 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDarkMode
-                ? AppTheme.inputFieldBg.withOpacity(0.5)
+                ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
                 : Colors.transparent,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.06),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -1088,7 +1200,7 @@ class _HomePageState extends State<HomePage> {
                     width: double.infinity,
                     color: isDarkMode
                         ? AppTheme.darkBackground
-                        : AppTheme.background.withOpacity(0.5),
+                        : AppTheme.background.withValues(alpha: 0.5),
                     child: _buildProductImage(
                       product,
                       isDarkMode,
@@ -1319,7 +1431,7 @@ class _HomePageState extends State<HomePage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 4,
                           ),
                         ],
@@ -1355,7 +1467,7 @@ class _HomePageState extends State<HomePage> {
       return Icon(
         Icons.image_outlined,
         size: 48,
-        color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+        color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
       );
     }
 
@@ -1368,7 +1480,7 @@ class _HomePageState extends State<HomePage> {
         return Icon(
           Icons.broken_image_outlined,
           size: 44,
-          color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.6),
+          color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.6),
         );
       },
       loadingBuilder: (context, child, loadingProgress) {
@@ -1424,6 +1536,11 @@ class _HomePageState extends State<HomePage> {
         'labelKey': 'nav_products',
       },
       {
+        'icon': Icons.receipt_long_outlined,
+        'activeIcon': Icons.receipt_long,
+        'labelKey': 'nav_orders',
+      },
+      {
         'icon': Icons.account_balance_wallet_outlined,
         'activeIcon': Icons.account_balance_wallet,
         'labelKey': 'nav_balance',
@@ -1445,12 +1562,12 @@ class _HomePageState extends State<HomePage> {
         color: isDarkMode ? AppTheme.topBottomBar : AppTheme.white,
         border: Border.all(
           color: isDarkMode
-              ? AppTheme.inputFieldBg.withOpacity(0.5)
+              ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
               : Colors.transparent,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.08),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.08),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),
@@ -1473,18 +1590,28 @@ class _HomePageState extends State<HomePage> {
                   } else if (index == 2) {
                     await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MyBalancePage()),
+                      MaterialPageRoute(
+                        builder: (_) => const SellerOrdersPage(),
+                      ),
                     );
+
                     if (!mounted) return;
+
                     await _refreshHomeData();
                   } else if (index == 3) {
                     await Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => ProfilePage(isBuyer: _isBuyer),
-                      ),
+                      MaterialPageRoute(builder: (_) => const MyBalancePage()),
                     );
+
                     if (!mounted) return;
+
+                    await _refreshHomeData();
+                  } else if (index == 4) {
+                    await _openProfilePage();
+
+                    if (!mounted) return;
+
                     await _refreshHomeData();
                   }
                 } else {
@@ -1509,12 +1636,11 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(builder: (_) => const MyOrdersPage()),
                     );
                   } else if (index == 3) {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProfilePage(isBuyer: _isBuyer),
-                      ),
-                    );
+                    await _openProfilePage();
+
+                    if (!mounted) return;
+
+                    await _refreshHomeData();
                   }
                 }
               },

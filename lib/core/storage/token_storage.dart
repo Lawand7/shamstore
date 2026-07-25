@@ -18,19 +18,19 @@ class TokenStorage {
   static const String _identityImageUrlKey = 'identity_image_url';
 
   static Future<void> saveToken(String token) async {
-    await _box.write(_authTokenKey, token);
+    await _box.write(_authTokenKey, token.trim());
   }
 
   static String? getToken() {
-    return _box.read<String>(_authTokenKey);
+    return _cleanStoredText(_box.read<dynamic>(_authTokenKey));
   }
 
   static Future<void> saveUserRole(String role) async {
-    await _box.write(_userRoleKey, role);
+    await _box.write(_userRoleKey, role.trim().toLowerCase());
   }
 
   static String? getUserRole() {
-    return _box.read<String>(_userRoleKey);
+    return _cleanStoredText(_box.read<dynamic>(_userRoleKey))?.toLowerCase();
   }
 
   static Future<void> saveUserId(int userId) async {
@@ -38,15 +38,25 @@ class TokenStorage {
   }
 
   static int? getUserId() {
-    return _box.read<int>(_userIdKey);
+    final value = _box.read<dynamic>(_userIdKey);
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value?.toString() ?? '');
   }
 
   static Future<void> saveUserEmail(String email) async {
-    await _box.write(_userEmailKey, email);
+    await _box.write(_userEmailKey, email.trim().toLowerCase());
   }
 
   static String? getUserEmail() {
-    return _box.read<String>(_userEmailKey);
+    return _cleanStoredText(_box.read<dynamic>(_userEmailKey));
   }
 
   static Future<void> saveProfileData({
@@ -56,54 +66,67 @@ class TokenStorage {
     String? dateOfBirth,
     String? profileImageUrl,
     String? identityImageUrl,
+    bool replaceExisting = false,
   }) async {
-    if (firstName != null && firstName.trim().isNotEmpty) {
-      await _box.write(_firstNameKey, firstName.trim());
+    if (replaceExisting) {
+      await clearProfileData();
     }
 
-    if (lastName != null && lastName.trim().isNotEmpty) {
-      await _box.write(_lastNameKey, lastName.trim());
-    }
-
-    if (governorate != null && governorate.trim().isNotEmpty) {
-      await _box.write(_governorateKey, governorate.trim());
-    }
-
-    if (dateOfBirth != null && dateOfBirth.trim().isNotEmpty) {
-      await _box.write(_dateOfBirthKey, dateOfBirth.trim());
-    }
-
-    if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty) {
-      await _box.write(_profileImageUrlKey, profileImageUrl.trim());
-    }
-
-    if (identityImageUrl != null && identityImageUrl.trim().isNotEmpty) {
-      await _box.write(_identityImageUrlKey, identityImageUrl.trim());
-    }
+    await _writeOptionalText(_firstNameKey, firstName);
+    await _writeOptionalText(_lastNameKey, lastName);
+    await _writeOptionalText(_governorateKey, governorate);
+    await _writeOptionalText(_dateOfBirthKey, dateOfBirth);
+    await _writeOptionalText(_profileImageUrlKey, profileImageUrl);
+    await _writeOptionalText(_identityImageUrlKey, identityImageUrl);
   }
 
   static String? getProfileFirstName() {
-    return _box.read<String>(_firstNameKey);
+    return _cleanStoredText(_box.read<dynamic>(_firstNameKey));
   }
 
   static String? getProfileLastName() {
-    return _box.read<String>(_lastNameKey);
+    return _cleanStoredText(_box.read<dynamic>(_lastNameKey));
   }
 
   static String? getProfileGovernorate() {
-    return _box.read<String>(_governorateKey);
+    return _cleanStoredText(_box.read<dynamic>(_governorateKey));
   }
 
   static String? getProfileDateOfBirth() {
-    return _box.read<String>(_dateOfBirthKey);
+    return _cleanStoredText(_box.read<dynamic>(_dateOfBirthKey));
   }
 
   static String? getProfileImageUrl() {
-    return _box.read<String>(_profileImageUrlKey);
+    return _cleanStoredText(_box.read<dynamic>(_profileImageUrlKey));
   }
 
   static String? getIdentityImageUrl() {
-    return _box.read<String>(_identityImageUrlKey);
+    return _cleanStoredText(_box.read<dynamic>(_identityImageUrlKey));
+  }
+
+  static String getProfileFullName() {
+    final parts = <String>[
+      if (getProfileFirstName() != null) getProfileFirstName()!,
+      if (getProfileLastName() != null) getProfileLastName()!,
+    ];
+
+    return parts.join(' ').trim();
+  }
+
+  static String getDisplayName() {
+    final fullName = getProfileFullName();
+
+    if (fullName.isNotEmpty) {
+      return fullName;
+    }
+
+    final email = getUserEmail();
+
+    if (email != null && email.isNotEmpty) {
+      return email.split('@').first;
+    }
+
+    return 'مستخدم';
   }
 
   static bool get isLoggedIn {
@@ -111,17 +134,48 @@ class TokenStorage {
     return token != null && token.isNotEmpty;
   }
 
-  static Future<void> clear() async {
-    await _box.remove(_authTokenKey);
-    await _box.remove(_userRoleKey);
-    await _box.remove(_userIdKey);
-    await _box.remove(_userEmailKey);
+  static Future<void> clearProfileData() async {
+    await Future.wait([
+      _box.remove(_firstNameKey),
+      _box.remove(_lastNameKey),
+      _box.remove(_governorateKey),
+      _box.remove(_dateOfBirthKey),
+      _box.remove(_profileImageUrlKey),
+      _box.remove(_identityImageUrlKey),
+    ]);
+  }
 
-    await _box.remove(_firstNameKey);
-    await _box.remove(_lastNameKey);
-    await _box.remove(_governorateKey);
-    await _box.remove(_dateOfBirthKey);
-    await _box.remove(_profileImageUrlKey);
-    await _box.remove(_identityImageUrlKey);
+  static Future<void> clear() async {
+    await Future.wait([
+      _box.remove(_authTokenKey),
+      _box.remove(_userRoleKey),
+      _box.remove(_userIdKey),
+      _box.remove(_userEmailKey),
+    ]);
+
+    await clearProfileData();
+  }
+
+  static Future<void> _writeOptionalText(
+    String key,
+    String? value,
+  ) async {
+    final cleanValue = _cleanStoredText(value);
+
+    if (cleanValue == null) {
+      return;
+    }
+
+    await _box.write(key, cleanValue);
+  }
+
+  static String? _cleanStoredText(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+
+    if (text.isEmpty || text.toLowerCase() == 'null') {
+      return null;
+    }
+
+    return text;
   }
 }

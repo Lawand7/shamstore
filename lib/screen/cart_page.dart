@@ -49,7 +49,19 @@ class _CartPageState extends State<CartPage> {
   double get _total => _subtotal + _deliveryFee;
 
   Future<void> _increaseQty(CustomerCartItem item) async {
-    final newQuantity = item.quantity + 1;
+    final int availableQuantity = _availableQuantity(item);
+
+    if (availableQuantity <= 0) {
+      _showError('هذا المنتج غير متوفر حالياً');
+      return;
+    }
+
+    if (item.quantity >= availableQuantity) {
+      _showError('الكمية المتوفرة من هذا المنتج هي $availableQuantity فقط');
+      return;
+    }
+
+    final int newQuantity = item.quantity + 1;
 
     final bool success = await _customerController.updateCartItem(
       cartItemId: item.id,
@@ -127,13 +139,60 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  void _openCheckout(CustomerCartItem item) {
-    Navigator.push(
+  Future<void> _openCheckout(CustomerCartItem item) async {
+    final ProductModel? product = item.product;
+    final int availableQuantity = _availableQuantity(item);
+
+    if (product == null) {
+      _showError(
+        'تعذر قراءة بيانات المنتج. حدّث السلة ثم أعد المحاولة',
+      );
+      return;
+    }
+
+    if (!product.isActive) {
+      _showError('هذا المنتج غير متاح للبيع حالياً');
+      return;
+    }
+
+    if (availableQuantity <= 0) {
+      _showError('نفدت كمية هذا المنتج');
+      return;
+    }
+
+    if (item.quantity > availableQuantity) {
+      _showError(
+        'الكمية المطلوبة ${item.quantity} بينما المتوفر $availableQuantity فقط',
+      );
+      return;
+    }
+
+    final bool? orderCreated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => CheckoutPage(item: _cartItemToCheckoutMap(item)),
+        builder: (_) => CheckoutPage(
+          item: _cartItemToCheckoutMap(item),
+        ),
       ),
     );
+
+    if (!mounted || orderCreated != true) {
+      return;
+    }
+
+    final bool refreshed = await _customerController.fetchCart();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!refreshed) {
+      _showError(
+        _customerController.cartErrorMessage.value.isNotEmpty
+            ? _customerController.cartErrorMessage.value
+            : 'تم إنشاء الطلب، لكن تعذر تحديث السلة تلقائياً',
+      );
+    }
   }
 
   void _openProductDetails(CustomerCartItem item) {
@@ -194,6 +253,8 @@ class _CartPageState extends State<CartPage> {
       'price': _getUnitPrice(item),
       'qty': item.quantity,
       'quantity': item.quantity,
+      'available_quantity': product?.quantity ?? 0,
+      'is_active': product?.isActive ?? false,
       'total_price': item.totalPrice,
       'imageUrl': product?.fullImageUrl ?? '',
       'product_image_url': product?.productImageUrl ?? '',
@@ -223,6 +284,21 @@ class _CartPageState extends State<CartPage> {
     }
 
     return value.toStringAsFixed(2);
+  }
+
+  int _availableQuantity(CustomerCartItem item) {
+    return item.product?.quantity ?? 0;
+  }
+
+  bool _canPurchase(CustomerCartItem item) {
+    final ProductModel? product = item.product;
+    final int availableQuantity = _availableQuantity(item);
+
+    return product != null &&
+        product.isActive &&
+        availableQuantity > 0 &&
+        item.quantity > 0 &&
+        item.quantity <= availableQuantity;
   }
 
   @override
@@ -367,6 +443,9 @@ class _CartPageState extends State<CartPage> {
         : 'غير متوفر';
 
     final double unitPrice = _getUnitPrice(item);
+    final int availableQuantity = _availableQuantity(item);
+    final bool canPurchase = _canPurchase(item);
+    final bool outOfStock = availableQuantity <= 0;
 
     final Color activeColor = isDarkMode
         ? AppTheme.accentBlue
@@ -383,7 +462,7 @@ class _CartPageState extends State<CartPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -453,32 +532,48 @@ class _CartPageState extends State<CartPage> {
               }),
               const SizedBox(height: 6),
               GestureDetector(
-                onTap: () => _openCheckout(item),
+                onTap: canPurchase ? () => _openCheckout(item) : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? activeColor.withOpacity(0.08)
-                        : const Color(0xFFEEF4FC),
+                    color: canPurchase
+                        ? (isDarkMode
+                              ? activeColor.withValues(alpha: 0.08)
+                              : const Color(0xFFEEF4FC))
+                        : (isDarkMode
+                              ? AppTheme.inputFieldBg
+                              : const Color(0xFFF3F4F6)),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: activeColor.withOpacity(0.3)),
+                    border: Border.all(
+                      color: canPurchase
+                          ? activeColor.withValues(alpha: 0.3)
+                          : AppTheme.textLight.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.payment_outlined,
+                        canPurchase
+                            ? Icons.payment_outlined
+                            : Icons.block_rounded,
                         size: 13,
-                        color: activeColor,
+                        color: canPurchase
+                            ? activeColor
+                            : AppTheme.textLight,
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        AppLocalizations.of(context).translate('Pay'),
+                        canPurchase
+                            ? AppLocalizations.of(context).translate('Pay')
+                            : 'غير متاح',
                         style: TextStyle(
                           fontSize: 10,
-                          color: activeColor,
+                          color: canPurchase
+                              ? activeColor
+                              : AppTheme.textLight,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -591,6 +686,24 @@ class _CartPageState extends State<CartPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
+                Text(
+                  outOfStock
+                      ? 'نفد المخزون'
+                      : 'المتوفر: $availableQuantity',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: outOfStock
+                        ? Colors.red
+                        : (isDarkMode
+                              ? AppTheme.textSecondary
+                              : AppTheme.textGrey),
+                    fontWeight: outOfStock
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                  textAlign: _isArabic ? TextAlign.right : TextAlign.left,
+                ),
+                const SizedBox(height: 3),
                 GestureDetector(
                   onTap: () => _openProductDetails(item),
                   child: Text(
@@ -622,10 +735,14 @@ class _CartPageState extends State<CartPage> {
           _customerController.isUpdatingCartItem.value &&
           _customerController.updatingCartItemId.value == item.id;
 
+      final int availableQuantity = _availableQuantity(item);
+      final bool reachedAvailableQuantity =
+          availableQuantity <= 0 || item.quantity >= availableQuantity;
+
       return Row(
         children: [
           GestureDetector(
-            onTap: isUpdatingThisItem
+            onTap: isUpdatingThisItem || reachedAvailableQuantity
                 ? null
                 : () async {
                     await _increaseQty(item);
@@ -640,7 +757,15 @@ class _CartPageState extends State<CartPage> {
                   color: isDarkMode ? Colors.transparent : AppTheme.border,
                 ),
               ),
-              child: Icon(Icons.add, size: 14, color: activeColor),
+              child: Icon(
+                Icons.add,
+                size: 14,
+                color: reachedAvailableQuantity
+                    ? (isDarkMode
+                          ? AppTheme.textSecondary
+                          : AppTheme.textLight)
+                    : activeColor,
+              ),
             ),
           ),
           Container(
@@ -711,7 +836,7 @@ class _CartPageState extends State<CartPage> {
         child: Icon(
           Icons.inventory_2_outlined,
           size: 32,
-          color: activeColor.withOpacity(0.6),
+          color: activeColor.withValues(alpha: 0.6),
         ),
       );
     }
@@ -731,7 +856,7 @@ class _CartPageState extends State<CartPage> {
           return Icon(
             Icons.broken_image_outlined,
             size: 32,
-            color: activeColor.withOpacity(0.6),
+            color: activeColor.withValues(alpha: 0.6),
           );
         },
       ),
@@ -754,7 +879,7 @@ class _CartPageState extends State<CartPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.18 : 0.06),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

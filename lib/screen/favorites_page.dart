@@ -25,6 +25,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return Localizations.localeOf(context).languageCode == 'ar';
   }
 
+  List<ProductModel> get _visibleFavoriteProducts {
+    return _customerController.favoriteProducts
+        .where(
+          (ProductModel product) => product.isActive && product.quantity > 0,
+        )
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +57,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Future<void> _loadFavorites() async {
-    await _customerController.fetchFavoriteProducts(refresh: true);
+    await Future.wait<bool>([
+      _customerController.fetchFavoriteProducts(refresh: true),
+      _customerController.fetchCart(),
+    ]);
   }
 
   void _onScroll() {
@@ -73,6 +84,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
   }
 
+  bool _isProductAvailable(ProductModel product) {
+    return product.isActive && product.quantity > 0;
+  }
+
   Future<void> _removeFromFavorites(ProductModel product) async {
     final bool success = await _customerController.removeFromFavorites(
       productId: product.id,
@@ -81,34 +96,112 @@ class _FavoritesPageState extends State<FavoritesPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل العملية',
-        _customerController.favoriteActionErrorMessage.value.isNotEmpty
+      _showSnackBar(
+        title: 'فشل العملية',
+        message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
             ? _customerController.favoriteActionErrorMessage.value
             : 'حدث خطأ أثناء حذف المنتج من المفضلة',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        isError: true,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم حذف المنتج من المفضلة',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
+    _customerController.favoriteProducts.removeWhere(
+      (ProductModel item) => item.id == product.id,
+    );
+
+    _showSnackBar(
+      title: 'نجاح',
+      message: 'تم حذف المنتج من المفضلة',
+      isError: false,
     );
   }
 
-  void _openProductDetails(ProductModel product) {
-    Navigator.push(
+  Future<void> _openProductDetails(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showUnavailableProductMessage(product);
+      await _loadFavorites();
+      return;
+    }
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ProductDetailsPage(product: _productToMap(product)),
       ),
+    );
+
+    if (!mounted) return;
+    await _loadFavorites();
+  }
+
+  Future<void> _addProductToCart(ProductModel product) async {
+    if (!_isProductAvailable(product)) {
+      _showUnavailableProductMessage(product);
+      await _loadFavorites();
+      return;
+    }
+
+    final existingItem = _customerController.findCartItemByProductId(
+      product.id,
+    );
+
+    if (existingItem != null && existingItem.quantity >= product.quantity) {
+      _showSnackBar(
+        title: 'الكمية غير متاحة',
+        message: 'لديك في السلة كامل الكمية المتوفرة: ${product.quantity}',
+        isError: true,
+      );
+      return;
+    }
+
+    final bool success = await _customerController.addCartItem(
+      productId: product.id,
+      quantity: 1,
+    );
+
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        title: 'فشل الإضافة',
+        message: _customerController.addCartItemErrorMessage.value.isNotEmpty
+            ? _customerController.addCartItemErrorMessage.value
+            : 'تعذر إضافة المنتج إلى السلة',
+        isError: true,
+      );
+      return;
+    }
+
+    _showSnackBar(
+      title: 'تمت الإضافة',
+      message: 'تمت إضافة المنتج إلى السلة',
+      isError: false,
+    );
+  }
+
+  void _showUnavailableProductMessage(ProductModel product) {
+    _showSnackBar(
+      title: 'المنتج غير متاح',
+      message: product.quantity <= 0
+          ? 'نفدت كمية هذا المنتج'
+          : 'أوقف البائع عرض هذا المنتج',
+      isError: true,
+    );
+  }
+
+  void _showSnackBar({
+    required String title,
+    required String message,
+    required bool isError,
+  }) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError ? Colors.red : Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
     );
   }
 
@@ -130,6 +223,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       'is_active': product.isActive,
       'created_at': product.createdAt,
       'updated_at': product.updatedAt,
+      'fav': true,
+      'rating': 0.0,
+      'sold': 0,
       'sellerRating': 0.0,
       'sellerName': 'Seller #${product.sellerId}',
     };
@@ -167,25 +263,32 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ),
       ),
       body: Obx(() {
+        final List<ProductModel> visibleProducts = _visibleFavoriteProducts;
+        final bool hasStoredFavorites =
+            _customerController.favoriteProducts.isNotEmpty;
+
         if (_customerController.isLoadingFavorites.value &&
-            _customerController.favoriteProducts.isEmpty) {
+            !hasStoredFavorites) {
           return const Center(child: CircularProgressIndicator());
         }
 
         if (_customerController.favoriteProductsErrorMessage.value.isNotEmpty &&
-            _customerController.favoriteProducts.isEmpty) {
+            !hasStoredFavorites) {
           return _buildErrorState(isDarkMode);
         }
 
-        if (_customerController.favoriteProducts.isEmpty) {
+        if (visibleProducts.isEmpty) {
           return RefreshIndicator(
             onRefresh: _loadFavorites,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.65,
-                  child: _buildEmptyState(isDarkMode),
+                  height: MediaQuery.sizeOf(context).height * 0.65,
+                  child: _buildEmptyState(
+                    isDarkMode,
+                    hasUnavailableFavorites: hasStoredFavorites,
+                  ),
                 ),
               ],
             ),
@@ -198,17 +301,26 @@ class _FavoritesPageState extends State<FavoritesPage> {
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
+              SliverToBoxAdapter(
+                child: _buildFavoritesInfo(
+                  isDarkMode: isDarkMode,
+                  visibleCount: visibleProducts.length,
+                  hiddenCount:
+                      _customerController.favoriteProducts.length -
+                      visibleProducts.length,
+                ),
+              ),
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 sliver: SliverGrid(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final product = _customerController.favoriteProducts[index];
+                    final product = visibleProducts[index];
 
                     return _buildFavoriteCard(
                       product: product,
                       isDarkMode: isDarkMode,
                     );
-                  }, childCount: _customerController.favoriteProducts.length),
+                  }, childCount: visibleProducts.length),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
@@ -222,6 +334,39 @@ class _FavoritesPageState extends State<FavoritesPage> {
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildFavoritesInfo({
+    required bool isDarkMode,
+    required int visibleCount,
+    required int hiddenCount,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (hiddenCount > 0)
+            Text(
+              'مخفي لعدم التوفر: $hiddenCount',
+              style: TextStyle(
+                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+                fontSize: 11,
+              ),
+            )
+          else
+            const SizedBox.shrink(),
+          Text(
+            'المنتجات المتاحة: $visibleCount',
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -249,78 +394,113 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ? AppTheme.accentBlue
         : AppTheme.primary;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 58,
-              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              _customerController.favoriteProductsErrorMessage.value,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
-              ),
-            ),
-            const SizedBox(height: 18),
-            ElevatedButton(
-              onPressed: _loadFavorites,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: activeColor,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: _loadFavorites,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.7,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 58,
+                      color: isDarkMode
+                          ? AppTheme.textSecondary
+                          : AppTheme.textGrey,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      _customerController.favoriteProductsErrorMessage.value,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDarkMode
+                            ? AppTheme.textSecondary
+                            : AppTheme.textGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    ElevatedButton(
+                      onPressed: _loadFavorites,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: activeColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'إعادة المحاولة',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: const Text(
-                'إعادة المحاولة',
-                style: TextStyle(color: Colors.white),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState(bool isDarkMode) {
+  Widget _buildEmptyState(
+    bool isDarkMode, {
+    required bool hasUnavailableFavorites,
+  }) {
+    final Color activeColor = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite_border_rounded,
-            size: 60,
-            color: isDarkMode
-                ? AppTheme.textSecondary.withOpacity(0.4)
-                : AppTheme.textLight.withOpacity(0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'قائمة المفضلة فارغة',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              hasUnavailableFavorites
+                  ? Icons.inventory_2_outlined
+                  : Icons.favorite_border_rounded,
+              size: 60,
+              color: hasUnavailableFavorites
+                  ? activeColor.withValues(alpha: 0.7)
+                  : isDarkMode
+                  ? AppTheme.textSecondary.withValues(alpha: 0.4)
+                  : AppTheme.textLight.withValues(alpha: 0.4),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'اضغط على زر القلب في الصفحة الرئيسية لإضافة المنتجات',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+            const SizedBox(height: 16),
+            Text(
+              hasUnavailableFavorites
+                  ? 'منتجاتك المفضلة غير متاحة حالياً'
+                  : 'قائمة المفضلة فارغة',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              hasUnavailableFavorites
+                  ? 'المنتجات المحفوظة نفدت كميتها أو أوقف البائع عرضها. اسحب للأسفل للتحقق مجدداً.'
+                  : 'اضغط على زر القلب في الصفحة الرئيسية لإضافة المنتجات',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.5,
+                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -333,6 +513,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ? AppTheme.accentBlue
         : AppTheme.primary;
 
+    final bool isThisProductChanging =
+        _customerController.isChangingFavorite.value &&
+        _customerController.changingFavoriteProductId.value == product.id;
+
+    final bool isAddingToCart =
+        _customerController.isAddingCartItem.value &&
+        _customerController.addingCartProductId.value == product.id;
+
     return GestureDetector(
       onTap: () => _openProductDetails(product),
       child: Container(
@@ -344,7 +532,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -362,11 +550,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     top: Radius.circular(16),
                   ),
                   child: Container(
-                    height: 110,
+                    height: 100,
                     width: double.infinity,
                     color: isDarkMode
                         ? AppTheme.inputFieldBg
-                        : AppTheme.background.withOpacity(0.5),
+                        : AppTheme.background.withValues(alpha: 0.5),
                     child: _buildProductImage(
                       product: product,
                       isDarkMode: isDarkMode,
@@ -400,139 +588,47 @@ class _FavoritesPageState extends State<FavoritesPage> {
                               ? TextAlign.right
                               : TextAlign.left,
                         ),
-                        Row(
-                          mainAxisAlignment: _isArabic
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          children: [
-                            if (!_isArabic)
-                              Icon(
-                                Icons.location_on,
-                                size: 11,
-                                color: activeColor,
-                              ),
-                            Expanded(
-                              child: Text(
-                                product.governorate.isNotEmpty
-                                    ? product.governorate
-                                    : 'غير متوفر',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: isDarkMode
-                                      ? AppTheme.textSecondary
-                                      : AppTheme.textLight,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: _isArabic
-                                    ? TextAlign.right
-                                    : TextAlign.left,
-                              ),
-                            ),
-                            if (_isArabic)
-                              Icon(
-                                Icons.location_on,
-                                size: 11,
-                                color: activeColor,
-                              ),
-                          ],
+                        _buildLocationRow(
+                          product: product,
+                          isDarkMode: isDarkMode,
+                          activeColor: activeColor,
                         ),
-                        Row(
-                          mainAxisAlignment: _isArabic
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          children: [
-                            if (!_isArabic)
-                              const Icon(
-                                Icons.inventory_2_outlined,
-                                size: 11,
-                                color: Colors.orange,
-                              ),
-                            if (!_isArabic) const SizedBox(width: 3),
-                            Text(
-                              product.quantity.toString(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.orange,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Expanded(
-                              child: Text(
-                                'الكمية المتوفرة',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: isDarkMode
-                                      ? AppTheme.textSecondary
-                                      : AppTheme.textLight,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: _isArabic
-                                    ? TextAlign.right
-                                    : TextAlign.left,
-                              ),
-                            ),
-                            if (_isArabic) const SizedBox(width: 3),
-                            if (_isArabic)
-                              const Icon(
-                                Icons.inventory_2_outlined,
-                                size: 11,
-                                color: Colors.orange,
-                              ),
-                          ],
+                        _buildQuantityRow(
+                          product: product,
+                          isDarkMode: isDarkMode,
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             GestureDetector(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('إضافة السلة سنربطها لاحقاً'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              },
-                              child: Icon(
-                                Icons.add_shopping_cart,
-                                color: activeColor,
-                                size: 18,
+                              onTap: isAddingToCart
+                                  ? null
+                                  : () => _addProductToCart(product),
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? AppTheme.selectedBorder
+                                      : AppTheme.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: isAddingToCart
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(7),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.add_shopping_cart,
+                                        color: Colors.white,
+                                        size: 15,
+                                      ),
                               ),
                             ),
-                            Row(
-                              children: [
-                                if (!_isArabic)
-                                  Text(
-                                    _formatProductPrice(product.price),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: activeColor,
-                                    ),
-                                  ),
-                                const SizedBox(width: 3),
-                                const Text(
-                                  'ل.س',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                                if (_isArabic)
-                                  Text(
-                                    _formatProductPrice(product.price),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: activeColor,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                            _buildPrice(product, activeColor),
                           ],
                         ),
                       ],
@@ -544,48 +640,145 @@ class _FavoritesPageState extends State<FavoritesPage> {
             Positioned(
               top: 8,
               left: 8,
-              child: Obx(() {
-                final bool isThisProductChanging =
-                    _customerController.isChangingFavorite.value &&
-                    _customerController.changingFavoriteProductId.value ==
-                        product.id;
-
-                return GestureDetector(
-                  onTap: isThisProductChanging
-                      ? null
-                      : () async {
-                          await _removeFromFavorites(product);
-                        },
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? AppTheme.inputFieldBg : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: isThisProductChanging
-                        ? const Padding(
-                            padding: EdgeInsets.all(7),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(
-                            Icons.favorite,
-                            color: Colors.red,
-                            size: 16,
-                          ),
+              child: GestureDetector(
+                onTap: isThisProductChanging
+                    ? null
+                    : () => _removeFromFavorites(product),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? AppTheme.inputFieldBg : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
-                );
-              }),
+                  child: isThisProductChanging
+                      ? const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.favorite, color: Colors.red, size: 16),
+                ),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLocationRow({
+    required ProductModel product,
+    required bool isDarkMode,
+    required Color activeColor,
+  }) {
+    return Row(
+      mainAxisAlignment: _isArabic
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      children: [
+        if (!_isArabic) Icon(Icons.location_on, size: 11, color: activeColor),
+        if (!_isArabic) const SizedBox(width: 3),
+        Expanded(
+          child: Text(
+            product.governorate.isNotEmpty ? product.governorate : 'غير متوفر',
+            style: TextStyle(
+              fontSize: 10,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: _isArabic ? TextAlign.right : TextAlign.left,
+          ),
+        ),
+        if (_isArabic) const SizedBox(width: 3),
+        if (_isArabic) Icon(Icons.location_on, size: 11, color: activeColor),
+      ],
+    );
+  }
+
+  Widget _buildQuantityRow({
+    required ProductModel product,
+    required bool isDarkMode,
+  }) {
+    return Row(
+      mainAxisAlignment: _isArabic
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      children: [
+        if (!_isArabic)
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 11,
+            color: Colors.orange,
+          ),
+        if (!_isArabic) const SizedBox(width: 3),
+        Text(
+          product.quantity.toString(),
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.orange,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            'الكمية المتوفرة',
+            style: TextStyle(
+              fontSize: 10,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: _isArabic ? TextAlign.right : TextAlign.left,
+          ),
+        ),
+        if (_isArabic) const SizedBox(width: 3),
+        if (_isArabic)
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 11,
+            color: Colors.orange,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPrice(ProductModel product, Color activeColor) {
+    return Row(
+      children: [
+        if (!_isArabic)
+          Text(
+            _formatProductPrice(product.price),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: activeColor,
+            ),
+          ),
+        const SizedBox(width: 3),
+        const Text(
+          'ل.س',
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(width: 3),
+        if (_isArabic)
+          Text(
+            _formatProductPrice(product.price),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: activeColor,
+            ),
+          ),
+      ],
     );
   }
 
@@ -598,20 +791,20 @@ class _FavoritesPageState extends State<FavoritesPage> {
       return Icon(
         Icons.image_outlined,
         size: 56,
-        color: activeColor.withOpacity(isDarkMode ? 0.8 : 0.6),
+        color: activeColor.withValues(alpha: isDarkMode ? 0.8 : 0.6),
       );
     }
 
     return Image.network(
       product.fullImageUrl,
       width: double.infinity,
-      height: 110,
+      height: 100,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) {
         return Icon(
           Icons.broken_image_outlined,
           size: 52,
-          color: activeColor.withOpacity(isDarkMode ? 0.8 : 0.6),
+          color: activeColor.withValues(alpha: isDarkMode ? 0.8 : 0.6),
         );
       },
       loadingBuilder: (context, child, loadingProgress) {
