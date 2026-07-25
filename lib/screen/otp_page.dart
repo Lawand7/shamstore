@@ -286,19 +286,6 @@ class _OtpScreenState extends State<OtpScreen> {
       );
     }
 
-    debugPrint('========== SAVED REGISTER DATA ==========');
-    debugPrint('Token saved: ${TokenStorage.getToken() != null}');
-    debugPrint('Email: ${TokenStorage.getUserEmail()}');
-    debugPrint('User ID: ${TokenStorage.getUserId()}');
-    debugPrint('Role: ${TokenStorage.getUserRole()}');
-    debugPrint('First name: ${TokenStorage.getProfileFirstName()}');
-    debugPrint('Last name: ${TokenStorage.getProfileLastName()}');
-    debugPrint('DOB: ${TokenStorage.getProfileDateOfBirth()}');
-    debugPrint('Governorate: ${TokenStorage.getProfileGovernorate()}');
-    debugPrint('Profile image: ${TokenStorage.getProfileImageUrl()}');
-    debugPrint('Identity image: ${TokenStorage.getIdentityImageUrl()}');
-    debugPrint('=========================================');
-
     final roleValue = role.trim().toLowerCase();
     final isBuyer = roleValue == 'customer' || roleValue == 'buyer';
 

@@ -26,29 +26,40 @@ class DioClient {
                 options.headers['Authorization'] = 'Bearer $token';
               }
 
-              debugPrint('========== API REQUEST ==========');
-              debugPrint('${options.method} ${options.baseUrl}${options.path}');
-              debugPrint('Headers: ${options.headers}');
-              debugPrint('Query: ${options.queryParameters}');
-              debugPrint('=================================');
+              options.extra['requestStartedAt'] = DateTime.now();
+              debugPrint('[API REQUEST] ${options.method} ${options.path}');
 
               return handler.next(options);
             },
             onResponse: (response, handler) {
-              debugPrint('========== API RESPONSE ==========');
-              debugPrint('Status: ${response.statusCode}');
-              debugPrint('Data: ${response.data}');
-              debugPrint('==================================');
+              final startedAt =
+                  response.requestOptions.extra['requestStartedAt'];
+              final durationMs = startedAt is DateTime
+                  ? DateTime.now().difference(startedAt).inMilliseconds
+                  : null;
+
+              debugPrint(
+                '[API RESPONSE] ${response.requestOptions.method} '
+                '${response.requestOptions.path} '
+                'status=${response.statusCode} '
+                'durationMs=${durationMs ?? 'unknown'}',
+              );
 
               return handler.next(response);
             },
             onError: (DioException error, handler) {
-              debugPrint('========== API ERROR ==========');
-              debugPrint('Type: ${error.type}');
-              debugPrint('Status: ${error.response?.statusCode}');
-              debugPrint('Message: ${error.message}');
-              debugPrint('Data: ${error.response?.data}');
-              debugPrint('================================');
+              final startedAt = error.requestOptions.extra['requestStartedAt'];
+              final durationMs = startedAt is DateTime
+                  ? DateTime.now().difference(startedAt).inMilliseconds
+                  : null;
+
+              debugPrint(
+                '[API ERROR] ${error.requestOptions.method} '
+                '${error.requestOptions.path} '
+                'status=${error.response?.statusCode ?? 'none'} '
+                'type=${error.type} '
+                'durationMs=${durationMs ?? 'unknown'}',
+              );
 
               return handler.next(error);
             },

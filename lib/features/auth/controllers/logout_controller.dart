@@ -19,13 +19,9 @@ class LogoutController extends GetxController {
       apiLogoutSucceeded.value = false;
 
       try {
-        final result = await _authRepository.logout();
+        await _authRepository.logout();
 
         apiLogoutSucceeded.value = true;
-
-        debugPrint('========== LOGOUT API SUCCESS ==========');
-        debugPrint(result.toString());
-        debugPrint('========================================');
       } catch (error) {
         /*
          * حتى لو فشل طلب تسجيل الخروج من السيرفر،
@@ -33,10 +29,6 @@ class LogoutController extends GetxController {
          */
         apiLogoutSucceeded.value = false;
         errorMessage.value = _cleanErrorMessage(error);
-
-        debugPrint('========== LOGOUT API FAILED ==========');
-        debugPrint(error.toString());
-        debugPrint('=======================================');
       }
 
       /*
@@ -62,7 +54,6 @@ class LogoutController extends GetxController {
       return true;
     } catch (error) {
       errorMessage.value = _cleanErrorMessage(error);
-      debugPrint('Logout local clear error: $error');
       return false;
     } finally {
       isLoading.value = false;

@@ -5,14 +5,10 @@ import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage _) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  debugPrint('========== BACKGROUND NOTIFICATION ==========');
-  debugPrint('Title: ${message.notification?.title}');
-  debugPrint('Body: ${message.notification?.body}');
-  debugPrint('Data: ${message.data}');
-  debugPrint('=============================================');
+  debugPrint('Background notification received.');
 }
 
 class FirebaseNotificationService {
@@ -25,11 +21,7 @@ class FirebaseNotificationService {
 
     await _requestNotificationPermission();
 
-    final token = await getFcmToken();
-
-    debugPrint('================ FCM TOKEN ================');
-    debugPrint(token);
-    debugPrint('===========================================');
+    await getFcmToken();
 
     _listenToTokenRefresh();
     _listenToForegroundMessages();
@@ -51,10 +43,8 @@ class FirebaseNotificationService {
   }
 
   static void _listenToTokenRefresh() {
-    _messaging.onTokenRefresh.listen((newToken) {
-      debugPrint('============== NEW FCM TOKEN ==============');
-      debugPrint(newToken);
-      debugPrint('===========================================');
+    _messaging.onTokenRefresh.listen((_) {
+      debugPrint('FCM token refreshed.');
 
       // لاحقاً هنا نرسل التوكن الجديد إلى Laravel
       // مثلاً: AuthRepository.updateFcmToken(newToken)
@@ -62,20 +52,14 @@ class FirebaseNotificationService {
   }
 
   static void _listenToForegroundMessages() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('========== FOREGROUND NOTIFICATION ==========');
-      debugPrint('Title: ${message.notification?.title}');
-      debugPrint('Body: ${message.notification?.body}');
-      debugPrint('Data: ${message.data}');
-      debugPrint('=============================================');
+    FirebaseMessaging.onMessage.listen((_) {
+      debugPrint('Foreground notification received.');
     });
   }
 
   static void _listenToNotificationClicks() {
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('========== NOTIFICATION CLICKED ==========');
-      debugPrint('Data: ${message.data}');
-      debugPrint('==========================================');
+    FirebaseMessaging.onMessageOpenedApp.listen((_) {
+      debugPrint('Notification opened.');
     });
   }
 }

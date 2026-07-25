@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../repositories/auth_repository.dart';
@@ -15,16 +14,11 @@ class ForgotPasswordController extends GetxController {
       isSendingOtp.value = true;
       errorMessage.value = '';
 
-      final result = await _authRepository.sendOtp(email: email);
-
-      debugPrint('========== FORGOT PASSWORD SEND OTP RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('=======================================================');
+      await _authRepository.sendOtp(email: email);
 
       return true;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Forgot password send OTP error: $e');
       return false;
     } finally {
       isSendingOtp.value = false;
@@ -41,21 +35,16 @@ class ForgotPasswordController extends GetxController {
       isResettingPassword.value = true;
       errorMessage.value = '';
 
-      final result = await _authRepository.forgotPassword(
+      await _authRepository.forgotPassword(
         email: email,
         otp: otp,
         password: password,
         passwordConfirmation: passwordConfirmation,
       );
 
-      debugPrint('========== FORGOT PASSWORD RESET RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('====================================================');
-
       return true;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Forgot password reset error: $e');
       return false;
     } finally {
       isResettingPassword.value = false;

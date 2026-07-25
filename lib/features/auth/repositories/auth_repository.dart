@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
@@ -37,10 +36,7 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.login,
-        queryParameters: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.data is Map<String, dynamic>) {
@@ -109,9 +105,7 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.sendOtp,
-        queryParameters: {
-          'email': email,
-        },
+        queryParameters: {'email': email},
       );
 
       if (response.data is Map<String, dynamic>) {
@@ -133,10 +127,7 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.verifyOtp,
-        queryParameters: {
-          'email': email,
-          'otp': otp,
-        },
+        data: {'email': email, 'otp': otp},
       );
 
       if (response.data is Map<String, dynamic>) {
@@ -160,7 +151,7 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.forgotPassword,
-        queryParameters: {
+        data: {
           'email': email,
           'otp': otp,
           'password': password,
@@ -188,7 +179,7 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.changePassword,
-        queryParameters: {
+        data: {
           'old_password': oldPassword,
           'new_password': newPassword,
           'new_password_confirmation': newPasswordConfirmation,
@@ -214,17 +205,8 @@ class AuthRepository {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.changePin,
-        queryParameters: {
-          'password': password,
-          'new_pin': newPin,
-        },
+        data: {'password': password, 'new_pin': newPin},
       );
-
-      debugPrint('========== CHANGE PIN RAW RESPONSE ==========');
-      debugPrint('Status Code: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
-      debugPrint('Data Type: ${response.data.runtimeType}');
-      debugPrint('=============================================');
 
       final statusCode = response.statusCode ?? 0;
 
@@ -263,7 +245,6 @@ class AuthRepository {
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     } catch (e) {
-      debugPrint('Unexpected change PIN error: $e');
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
@@ -400,12 +381,6 @@ class AuthRepository {
         data: formData,
       );
 
-      debugPrint('========== UPDATE PROFILE RAW RESPONSE ==========');
-      debugPrint('Status Code: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
-      debugPrint('Data Type: ${response.data.runtimeType}');
-      debugPrint('=================================================');
-
       final statusCode = response.statusCode ?? 0;
 
       if (statusCode >= 200 && statusCode < 300) {
@@ -430,7 +405,6 @@ class AuthRepository {
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     } catch (e) {
-      debugPrint('Unexpected update profile error: $e');
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
@@ -438,12 +412,6 @@ class AuthRepository {
   Future<Map<String, dynamic>> logout() async {
     try {
       final response = await DioClient.dio.post(ApiConstants.logout);
-
-      debugPrint('========== LOGOUT RAW RESPONSE ==========');
-      debugPrint('Status Code: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
-      debugPrint('Data Type: ${response.data.runtimeType}');
-      debugPrint('=========================================');
 
       final statusCode = response.statusCode ?? 0;
 
@@ -479,7 +447,6 @@ class AuthRepository {
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     } catch (e) {
-      debugPrint('Unexpected logout error: $e');
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }

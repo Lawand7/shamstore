@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../repositories/auth_repository.dart';
@@ -17,19 +16,11 @@ class ChangePinController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final result = await _authRepository.changePin(
-        password: password,
-        newPin: newPin,
-      );
-
-      debugPrint('========== CHANGE PIN RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('=========================================');
+      await _authRepository.changePin(password: password, newPin: newPin);
 
       return true;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Change PIN error: $e');
       return false;
     } finally {
       isLoading.value = false;

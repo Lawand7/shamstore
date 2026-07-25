@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../repositories/auth_repository.dart';
@@ -28,18 +27,9 @@ class UpdateProfileController extends GetxController {
         profileImagePath: profileImagePath,
       );
 
-      debugPrint('========== UPDATE PROFILE RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('=============================================');
-
       return result;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-
-      debugPrint('========== UPDATE PROFILE ERROR ==========');
-      debugPrint(e.toString());
-      debugPrint('==========================================');
-
       return null;
     } finally {
       isLoading.value = false;

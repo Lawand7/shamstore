@@ -460,6 +460,7 @@ class _HomePageState extends State<HomePage> {
                     if (!mounted) return;
 
                     await _refreshCart();
+                    await _refreshProducts();
                   },
                   child: Obx(() {
                     final count = _customerController.cartItemsCount;

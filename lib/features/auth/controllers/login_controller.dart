@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/core/storage/token_storage.dart';
@@ -20,12 +19,6 @@ class LoginController extends GetxController {
         email: email.trim(),
         password: password,
       );
-
-      if (kDebugMode) {
-        debugPrint('========== LOGIN RESPONSE ==========');
-        debugPrint(result.toString());
-        debugPrint('====================================');
-      }
 
       final token = _readFirstString(result, const ['token', 'access_token']);
 
@@ -107,27 +100,9 @@ class LoginController extends GetxController {
         replaceExisting: true,
       );
 
-      if (kDebugMode) {
-        debugPrint('========== SAVED LOGIN DATA ==========');
-        debugPrint('Token saved: ${TokenStorage.getToken() != null}');
-        debugPrint('Email: ${TokenStorage.getUserEmail()}');
-        debugPrint('User ID: ${TokenStorage.getUserId()}');
-        debugPrint('Role: ${TokenStorage.getUserRole()}');
-        debugPrint('Display name: ${TokenStorage.getDisplayName()}');
-        debugPrint('DOB: ${TokenStorage.getProfileDateOfBirth()}');
-        debugPrint('Governorate: ${TokenStorage.getProfileGovernorate()}');
-        debugPrint('Profile image: ${TokenStorage.getProfileImageUrl()}');
-        debugPrint('Identity image: ${TokenStorage.getIdentityImageUrl()}');
-        debugPrint('======================================');
-      }
-
       return true;
     } catch (error) {
       errorMessage.value = _cleanErrorMessage(error);
-
-      if (kDebugMode) {
-        debugPrint('Login error: $error');
-      }
 
       return false;
     } finally {

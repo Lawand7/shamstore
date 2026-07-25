@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/core/network/dio_client.dart';
@@ -21,27 +20,15 @@ class OtpController extends GetxController {
         queryParameters: {'email': email},
       );
 
-      debugPrint('========== SEND OTP RESPONSE ==========');
-      debugPrint('Status: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
-      debugPrint('=======================================');
-
       return response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300;
     } on DioException catch (e) {
       errorMessage.value = _handleDioError(e);
 
-      debugPrint('========== SEND OTP ERROR ==========');
-      debugPrint('Status: ${e.response?.statusCode}');
-      debugPrint('Data: ${e.response?.data}');
-      debugPrint('Message: ${e.message}');
-      debugPrint('====================================');
-
       return false;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Unexpected send OTP error: $e');
       return false;
     } finally {
       isSending.value = false;
@@ -56,14 +43,8 @@ class OtpController extends GetxController {
 
       final response = await DioClient.dio.post(
         '/verifyRegister',
-        queryParameters: {'email': email, 'otp': otp},
+        data: {'email': email, 'otp': otp},
       );
-
-      debugPrint('========== VERIFY REGISTER RESPONSE ==========');
-      debugPrint('Status: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
-      debugPrint('Type: ${response.data.runtimeType}');
-      debugPrint('==============================================');
 
       if (response.data is Map<String, dynamic>) {
         lastVerifyRegisterResponse = response.data as Map<String, dynamic>;
@@ -76,17 +57,10 @@ class OtpController extends GetxController {
       lastVerifyRegisterResponse = null;
       errorMessage.value = _handleDioError(e);
 
-      debugPrint('========== VERIFY REGISTER ERROR ==========');
-      debugPrint('Status: ${e.response?.statusCode}');
-      debugPrint('Data: ${e.response?.data}');
-      debugPrint('Message: ${e.message}');
-      debugPrint('===========================================');
-
       return false;
     } catch (e) {
       lastVerifyRegisterResponse = null;
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Unexpected verify register error: $e');
       return false;
     } finally {
       isLoading.value = false;

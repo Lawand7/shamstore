@@ -100,10 +100,13 @@ class ProductRepository {
         throw Exception('صيغة نتائج البحث غير صحيحة');
       }
 
-      return rawProducts
-          .whereType<Map>()
-          .map((item) => ProductModel.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
+      return _availableProducts(
+        rawProducts
+            .whereType<Map>()
+            .map(
+              (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
+            ),
+      );
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     } catch (e) {
@@ -177,10 +180,13 @@ class ProductRepository {
       throw Exception('صيغة قائمة المنتجات غير صحيحة');
     }
 
-    final products = rawProducts
-        .whereType<Map>()
-        .map((item) => ProductModel.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
+    final products = _availableProducts(
+      rawProducts
+          .whereType<Map>()
+          .map(
+            (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
+          ),
+    );
 
     final pagination = data['pagination'];
 
@@ -285,5 +291,11 @@ class ProductRepository {
     if (value is double) return value.toInt();
 
     return int.tryParse(value.toString()) ?? 0;
+  }
+
+  List<ProductModel> _availableProducts(
+    Iterable<ProductModel> products,
+  ) {
+    return products.where((product) => product.quantity > 0).toList();
   }
 }

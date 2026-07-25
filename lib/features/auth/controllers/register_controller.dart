@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../../services/firebase_notification_service.dart';
@@ -34,7 +33,7 @@ class RegisterController extends GetxController {
         return false;
       }
 
-      final result = await _authRepository.register(
+      await _authRepository.register(
         email: email,
         password: password,
         passwordConfirmation: passwordConfirmation,
@@ -49,14 +48,9 @@ class RegisterController extends GetxController {
         identityImagePath: identityImagePath,
       );
 
-      debugPrint('========== REGISTER RESPONSE ==========');
-      debugPrint(result.toString());
-      debugPrint('=======================================');
-
       return true;
     } catch (e) {
       errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-      debugPrint('Register error: $e');
       return false;
     } finally {
       isLoading.value = false;
