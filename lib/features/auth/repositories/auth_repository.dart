@@ -4,6 +4,31 @@ import 'package:flutter/foundation.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
 
+enum CheckPinFailureType {
+  none,
+  unauthorized,
+  incorrectPin,
+  forbidden,
+  validation,
+  network,
+  server,
+  unknown,
+}
+
+class CheckPinResult {
+  final bool isSuccess;
+  final int? statusCode;
+  final String message;
+  final CheckPinFailureType failureType;
+
+  const CheckPinResult({
+    required this.isSuccess,
+    required this.statusCode,
+    required this.message,
+    required this.failureType,
+  });
+}
+
 class AuthRepository {
   Future<Map<String, dynamic>> login({
     required String email,
@@ -243,6 +268,110 @@ class AuthRepository {
     }
   }
 
+  Future<CheckPinResult> checkPin({required String walletPin}) async {
+    try {
+      final response = await DioClient.dio.post(
+        ApiConstants.checkPin,
+        data: {'wallet_pin': walletPin},
+      );
+
+      final statusCode = response.statusCode;
+
+      if (statusCode != null && statusCode >= 200 && statusCode < 300) {
+        final responseMessage = response.data is String
+            ? response.data.toString().trim()
+            : '';
+
+        return CheckPinResult(
+          isSuccess: true,
+          statusCode: statusCode,
+          message: responseMessage.isNotEmpty
+              ? responseMessage
+              : 'تم التحقق من رمز PIN بنجاح',
+          failureType: CheckPinFailureType.none,
+        );
+      }
+
+      return CheckPinResult(
+        isSuccess: false,
+        statusCode: statusCode,
+        message: 'تعذر التحقق من رمز PIN',
+        failureType: CheckPinFailureType.unknown,
+      );
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      final responseData = error.response?.data;
+
+      if (statusCode == 401) {
+        return const CheckPinResult(
+          isSuccess: false,
+          statusCode: 401,
+          message: 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول من جديد',
+          failureType: CheckPinFailureType.unauthorized,
+        );
+      }
+
+      if (statusCode == 403) {
+        final isIncorrectPinResponse = _isIncorrectPinResponse(responseData);
+
+        return CheckPinResult(
+          isSuccess: false,
+          statusCode: 403,
+          message: isIncorrectPinResponse
+              ? 'رمز PIN غير صحيح'
+              : 'ليس لديك صلاحية لتنفيذ هذه العملية',
+          failureType: isIncorrectPinResponse
+              ? CheckPinFailureType.incorrectPin
+              : CheckPinFailureType.forbidden,
+        );
+      }
+
+      if (statusCode == 422) {
+        return CheckPinResult(
+          isSuccess: false,
+          statusCode: 422,
+          message:
+              _extractWalletPinValidationError(responseData) ??
+              'رمز PIN المرسل غير صالح',
+          failureType: CheckPinFailureType.validation,
+        );
+      }
+
+      if (_isConnectionFailure(error)) {
+        return const CheckPinResult(
+          isSuccess: false,
+          statusCode: null,
+          message:
+              'تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت وحاول مرة أخرى',
+          failureType: CheckPinFailureType.network,
+        );
+      }
+
+      if (statusCode != null && statusCode >= 500) {
+        return CheckPinResult(
+          isSuccess: false,
+          statusCode: statusCode,
+          message: 'حدث خطأ في الخادم. حاول مرة أخرى لاحقًا',
+          failureType: CheckPinFailureType.server,
+        );
+      }
+
+      return CheckPinResult(
+        isSuccess: false,
+        statusCode: statusCode,
+        message: _handleDioError(error),
+        failureType: CheckPinFailureType.unknown,
+      );
+    } catch (_) {
+      return const CheckPinResult(
+        isSuccess: false,
+        statusCode: null,
+        message: 'حدث خطأ غير متوقع أثناء التحقق من رمز PIN',
+        failureType: CheckPinFailureType.unknown,
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> updateProfile({
     required String firstName,
     required String lastName,
@@ -353,6 +482,57 @@ class AuthRepository {
       debugPrint('Unexpected logout error: $e');
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  bool _isConnectionFailure(DioException error) {
+    return error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.connectionError;
+  }
+
+  bool _isIncorrectPinResponse(dynamic responseData) {
+    String? responseMessage;
+
+    if (responseData is String) {
+      responseMessage = responseData.trim();
+    } else if (responseData is Map) {
+      responseMessage = responseData['message']?.toString().trim();
+    }
+
+    if (responseMessage == null || responseMessage.isEmpty) {
+      return false;
+    }
+
+    return responseMessage.toLowerCase().contains('you entered wrong pin');
+  }
+
+  String? _extractWalletPinValidationError(dynamic responseData) {
+    if (responseData is! Map) {
+      return null;
+    }
+
+    final errors = responseData['errors'];
+
+    if (errors is Map) {
+      final walletPinErrors = errors['wallet_pin'];
+
+      if (walletPinErrors is List && walletPinErrors.isNotEmpty) {
+        final firstError = walletPinErrors.first.toString().trim();
+
+        if (firstError.isNotEmpty) {
+          return firstError;
+        }
+      }
+
+      if (walletPinErrors is String && walletPinErrors.trim().isNotEmpty) {
+        return walletPinErrors.trim();
+      }
+    }
+
+    final message = responseData['message']?.toString().trim();
+
+    return message != null && message.isNotEmpty ? message : null;
   }
 
   String _handleDioError(DioException e) {

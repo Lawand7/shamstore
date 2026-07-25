@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import 'package:shamstore/features/auth/controllers/check_pin_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/wallet_page.dart';
 import 'package:shamstore/screen/my_balanc_page.dart';
 import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/screen/change_wallet_pin_page.dart';
+import 'package:shamstore/screen/login_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class EnterPinScreen extends StatefulWidget {
@@ -26,8 +29,22 @@ class EnterPinScreen extends StatefulWidget {
 class _EnterPinScreenState extends State<EnterPinScreen> {
   String _pin = '';
   final int _pinLength = 4;
+  late final CheckPinController _checkPinController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkPinController = Get.isRegistered<CheckPinController>()
+        ? Get.find<CheckPinController>()
+        : Get.put(CheckPinController());
+  }
 
   void _onKeypadTap(String value) {
+    if (_checkPinController.isLoading.value) {
+      return;
+    }
+
     if (_pin.length < _pinLength) {
       setState(() {
         _pin += value;
@@ -40,6 +57,10 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
   }
 
   void _onBackspace() {
+    if (_checkPinController.isLoading.value) {
+      return;
+    }
+
     if (_pin.isNotEmpty) {
       setState(() {
         _pin = _pin.substring(0, _pin.length - 1);
@@ -54,6 +75,10 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
   }
 
   Future<void> _goToChangeWalletPinPage() async {
+    if (_checkPinController.isLoading.value) {
+      return;
+    }
+
     _clearPin();
 
     await Navigator.push(
@@ -66,13 +91,50 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
     _clearPin();
   }
 
-  void _verifyPin() {
-    /*
-      ملاحظة مهمة:
-      حالياً لا يوجد API من الباك للتحقق من صحة PIN.
-      لذلك هذا الانتقال مؤقت كما كان سابقاً.
-      عند إضافة API مثل /api/verifyPin سنربط التحقق هنا.
-    */
+  Future<void> _verifyPin() async {
+    if (_checkPinController.isLoading.value) {
+      return;
+    }
+
+    if (_pin.length != _pinLength) {
+      Get.snackbar(
+        'تنبيه',
+        'يجب أن يتكون رمز PIN من أربعة أرقام',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final isValid = await _checkPinController.checkPin(pin: _pin);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!isValid) {
+      final sessionExpired = _checkPinController.sessionExpired.value;
+      final errorMessage = _checkPinController.errorMessage.value;
+
+      _clearPin();
+
+      Get.snackbar(
+        sessionExpired ? 'انتهت الجلسة' : 'تعذر التحقق',
+        errorMessage.isNotEmpty
+            ? errorMessage
+            : 'تعذر التحقق من رمز PIN. حاول مرة أخرى',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      if (sessionExpired) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+
+      return;
+    }
 
     if (widget.isComingFromCard && widget.productData != null) {
       Navigator.pushReplacement(
