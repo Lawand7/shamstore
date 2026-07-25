@@ -39,7 +39,7 @@ class _SearchPageState extends State<SearchPage> {
     'Aleppo',
     'Homs',
     'Hama',
-    'Lattakia',
+    'Latakia',
     'Tartous',
     'Idlib',
     'Deir el-Zor',

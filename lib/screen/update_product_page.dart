@@ -40,7 +40,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     'Aleppo',
     'Homs',
     'Hama',
-    'Lattakia',
+    'Latakia',
     'Tartous',
     'Idlib',
     'Deir el-Zor',

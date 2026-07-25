@@ -38,7 +38,7 @@ class _AddProductPageState extends State<AddProductPage> {
     'Aleppo',
     'Homs',
     'Hama',
-    'Lattakia',
+    'Latakia',
     'Tartous',
     'Idlib',
     'Deir el-Zor',
