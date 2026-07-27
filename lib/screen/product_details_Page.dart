@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
+import 'package:shamstore/features/products/repositories/product_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -59,10 +60,6 @@ class ProductDetailsPage extends StatelessWidget {
       'seller_name',
     ], fallback: sellerId > 0 ? 'Seller #$sellerId' : 'Seller');
 
-    final double sellerRating = _toDouble(
-      product['sellerRating'] ?? product['seller_rating'] ?? product['rating'],
-    );
-
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppTheme.darkBackground
@@ -89,6 +86,20 @@ class ProductDetailsPage extends StatelessWidget {
           ),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'إبلاغ عن المنتج',
+            icon: const Icon(
+              Icons.report_problem_outlined,
+              color: AppTheme.white,
+            ),
+            onPressed: () => _showProductReportSheet(
+              context: context,
+              productId: productId,
+              isDarkMode: isDarkMode,
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -158,7 +169,9 @@ class ProductDetailsPage extends StatelessWidget {
                   activePrimary: activePrimary,
                   governorate: governorate,
                   sellerName: sellerName,
-                  sellerRating: sellerRating,
+                  sellerRatingFuture: ProductRepository().getSellerRating(
+                    sellerId: sellerId,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
@@ -303,6 +316,209 @@ class ProductDetailsPage extends StatelessWidget {
     );
   }
 
+  Future<void> _showProductReportSheet({
+    required BuildContext context,
+    required int productId,
+    required bool isDarkMode,
+  }) async {
+    if (productId <= 0) {
+      Get.snackbar(
+        'فشل الإبلاغ',
+        'تعذر تحديد المنتج',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final TextEditingController reportController = TextEditingController();
+    bool isSending = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 22,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: isSending
+                            ? null
+                            : () => Navigator.of(sheetContext).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: isDarkMode
+                              ? AppTheme.textSecondary
+                              : AppTheme.textGrey,
+                        ),
+                      ),
+                      const Text(
+                        'الإبلاغ عن المنتج',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: reportController,
+                    maxLines: 4,
+                    minLines: 4,
+                    textAlign: TextAlign.right,
+                    enabled: !isSending,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'اكتب تفاصيل المشكلة بشكل واضح...',
+                      filled: true,
+                      fillColor: isDarkMode
+                          ? AppTheme.inputFieldBg
+                          : AppTheme.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: isDarkMode
+                            ? BorderSide.none
+                            : const BorderSide(color: AppTheme.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: isDarkMode
+                            ? BorderSide.none
+                            : const BorderSide(color: AppTheme.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: isSending
+                          ? null
+                          : () async {
+                              final description = reportController.text.trim();
+
+                              if (description.isEmpty) {
+                                Get.snackbar(
+                                  'فشل الإبلاغ',
+                                  'يرجى كتابة تفاصيل المشكلة',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+
+                              setModalState(() => isSending = true);
+
+                              try {
+                                final message = await ProductRepository()
+                                    .reportProduct(
+                                      productId: productId,
+                                      description: description,
+                                    );
+
+                                if (!sheetContext.mounted) return;
+
+                                Navigator.of(sheetContext).pop();
+                                Get.snackbar(
+                                  'تم الإرسال',
+                                  message,
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.green,
+                                  colorText: Colors.white,
+                                );
+                              } catch (error) {
+                                if (!sheetContext.mounted) return;
+
+                                setModalState(() => isSending = false);
+                                Get.snackbar(
+                                  'فشل الإبلاغ',
+                                  error.toString().replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  ),
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDarkMode
+                            ? AppTheme.selectedBorder
+                            : AppTheme.primary,
+                        foregroundColor: AppTheme.white,
+                        disabledBackgroundColor: AppTheme.textGrey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: isSending
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'إرسال البلاغ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    reportController.dispose();
+  }
+
   Widget _buildProductImage({
     required String imageUrl,
     required bool isDarkMode,
@@ -409,12 +625,8 @@ class ProductDetailsPage extends StatelessWidget {
     required Color activePrimary,
     required String governorate,
     required String sellerName,
-    required double sellerRating,
+    required Future<SellerRatingResult> sellerRatingFuture,
   }) {
-    final ratingText = sellerRating > 0
-        ? sellerRating.toStringAsFixed(1)
-        : '0.0';
-
     final locationWidget = Row(
       mainAxisSize: MainAxisSize.min,
       children: isArabic
@@ -464,28 +676,14 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
-                ratingText,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.orange,
-                ),
-              ),
+              _buildSellerRating(sellerRatingFuture, isDarkMode: isDarkMode),
               const SizedBox(width: 4),
               const Icon(Icons.star, color: Colors.orange, size: 16),
             ]
           : [
               const Icon(Icons.star, color: Colors.orange, size: 16),
               const SizedBox(width: 4),
-              Text(
-                ratingText,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.orange,
-                ),
-              ),
+              _buildSellerRating(sellerRatingFuture, isDarkMode: isDarkMode),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -516,6 +714,45 @@ class ProductDetailsPage extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(child: sellerWidget),
             ],
+    );
+  }
+
+  Widget _buildSellerRating(
+    Future<SellerRatingResult> sellerRatingFuture, {
+    required bool isDarkMode,
+  }) {
+    return FutureBuilder<SellerRatingResult>(
+      future: sellerRatingFuture,
+      builder: (context, snapshot) {
+        String ratingText = '...';
+
+        if (snapshot.connectionState == ConnectionState.done) {
+          final result = snapshot.data;
+
+          if (result?.hasRating == true) {
+            ratingText = result!.averageRating!.toStringAsFixed(2);
+          } else if (result?.errorMessage != null) {
+            ratingText = result!.errorMessage!;
+          } else {
+            ratingText = 'لا يوجد تقييم بعد';
+          }
+        }
+
+        return Flexible(
+          child: Text(
+            ratingText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: snapshot.data?.errorMessage != null
+                  ? (isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey)
+                  : Colors.orange,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -665,15 +902,5 @@ class ProductDetailsPage extends StatelessWidget {
     if (value is double) return value.toInt();
 
     return int.tryParse(value.toString()) ?? 0;
-  }
-
-  double _toDouble(dynamic value) {
-    if (value == null) return 0;
-
-    if (value is double) return value;
-
-    if (value is int) return value.toDouble();
-
-    return double.tryParse(value.toString()) ?? 0;
   }
 }

@@ -21,7 +21,82 @@ class ProductPageResult {
   });
 }
 
+class SellerRatingResult {
+  final double? averageRating;
+  final String? errorMessage;
+
+  const SellerRatingResult({this.averageRating, this.errorMessage});
+
+  bool get hasRating => averageRating != null && averageRating! > 0;
+}
+
 class ProductRepository {
+  Future<String> reportProduct({
+    required int productId,
+    required String description,
+  }) async {
+    final cleanDescription = description.trim();
+
+    if (productId <= 0) {
+      throw Exception('تعذر تحديد المنتج لإرسال البلاغ');
+    }
+
+    if (cleanDescription.isEmpty) {
+      throw Exception('يرجى كتابة تفاصيل المشكلة');
+    }
+
+    try {
+      final response = await DioClient.dio.post(
+        ApiConstants.reportProduct(productId),
+        data: {'description': cleanDescription},
+      );
+
+      final data = response.data;
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+
+      return 'تم إرسال البلاغ إلى الإدارة بنجاح';
+    } on DioException catch (error) {
+      throw Exception(_reportProductError(error));
+    } catch (error) {
+      throw Exception(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<SellerRatingResult> getSellerRating({required int sellerId}) async {
+    if (sellerId <= 0) {
+      return const SellerRatingResult(
+        errorMessage: 'تعذر تحديد البائع لعرض التقييم',
+      );
+    }
+
+    try {
+      final response = await DioClient.dio.get(
+        ApiConstants.sellerRating(sellerId),
+      );
+
+      final data = response.data;
+      if (data is! Map) {
+        return const SellerRatingResult(
+          errorMessage: 'تعذر قراءة تقييم البائع',
+        );
+      }
+
+      final map = Map<String, dynamic>.from(data);
+      final rawRating =
+          map['average_rating'] ??
+          (map['data'] is Map ? (map['data'] as Map)['average_rating'] : null);
+      final rating = _toDouble(rawRating);
+
+      return SellerRatingResult(averageRating: rating > 0 ? rating : null);
+    } on DioException catch (error) {
+      return SellerRatingResult(errorMessage: _sellerRatingError(error));
+    } catch (_) {
+      return const SellerRatingResult(errorMessage: 'تعذر تحميل تقييم البائع');
+    }
+  }
+
   Future<ProductPageResult> getAllProducts({int page = 1}) async {
     try {
       final response = await DioClient.dio.get(
@@ -101,11 +176,9 @@ class ProductRepository {
       }
 
       return _availableProducts(
-        rawProducts
-            .whereType<Map>()
-            .map(
-              (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
-            ),
+        rawProducts.whereType<Map>().map(
+          (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
+        ),
       );
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
@@ -181,11 +254,9 @@ class ProductRepository {
     }
 
     final products = _availableProducts(
-      rawProducts
-          .whereType<Map>()
-          .map(
-            (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
-          ),
+      rawProducts.whereType<Map>().map(
+        (item) => ProductModel.fromJson(Map<String, dynamic>.from(item)),
+      ),
     );
 
     final pagination = data['pagination'];
@@ -293,9 +364,74 @@ class ProductRepository {
     return int.tryParse(value.toString()) ?? 0;
   }
 
-  List<ProductModel> _availableProducts(
-    Iterable<ProductModel> products,
-  ) {
+  double _toDouble(dynamic value) {
+    if (value == null) return 0;
+
+    if (value is double) return value;
+
+    if (value is int) return value.toDouble();
+
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  List<ProductModel> _availableProducts(Iterable<ProductModel> products) {
     return products.where((product) => product.quantity > 0).toList();
+  }
+
+  String _reportProductError(DioException error) {
+    final statusCode = error.response?.statusCode;
+
+    if (statusCode == 401) {
+      return 'انتهت الجلسة، يرجى تسجيل الدخول من جديد';
+    }
+
+    if (statusCode == 403) {
+      return 'لا تملك صلاحية إرسال بلاغ عن المنتج';
+    }
+
+    if (statusCode == 404) {
+      return 'المنتج غير موجود';
+    }
+
+    if (statusCode == 422) {
+      return 'يرجى كتابة وصف صحيح للمشكلة';
+    }
+
+    if (statusCode == 500) {
+      return 'تعذر إرسال البلاغ بسبب خطأ في الخادم';
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'تعذر الاتصال بالخادم لإرسال البلاغ';
+      default:
+        return 'تعذر إرسال البلاغ';
+    }
+  }
+
+  String _sellerRatingError(DioException error) {
+    switch (error.response?.statusCode) {
+      case 401:
+        return 'انتهت الجلسة، لا يمكن تحميل تقييم البائع';
+      case 403:
+        return 'لا تملك صلاحية عرض تقييم البائع';
+      case 404:
+        return 'لم يتم العثور على تقييم البائع';
+      case 500:
+        return 'تعذر تحميل تقييم البائع من الخادم';
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'تعذر الاتصال لتحميل تقييم البائع';
+      default:
+        return 'تعذر تحميل تقييم البائع';
+    }
   }
 }

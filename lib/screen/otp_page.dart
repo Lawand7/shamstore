@@ -8,6 +8,7 @@ import 'package:shamstore/core/storage/token_storage.dart';
 import 'package:shamstore/features/auth/controllers/otp_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/screen/home_page.dart';
+import 'package:shamstore/screen/seller_home_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class PendingRegistrationData {
@@ -299,9 +300,13 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (!mounted) return;
 
+    final Widget destination = isBuyer
+        ? const HomePage(isBuyer: true)
+        : const SellerHomePage();
+
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => HomePage(isBuyer: isBuyer)),
+      MaterialPageRoute(builder: (_) => destination),
       (route) => false,
     );
   }

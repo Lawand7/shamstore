@@ -7,6 +7,9 @@ import 'package:get_storage/get_storage.dart';
 import 'firebase_options.dart';
 import 'package:shamstore/services/firebase_notification_service.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/core/storage/token_storage.dart';
+import 'package:shamstore/screen/home_page.dart';
+import 'package:shamstore/screen/seller_home_page.dart';
 import 'package:shamstore/screen/welcome_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 
@@ -39,11 +42,36 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('ar');
+  late final Widget _initialScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialScreen = _resolveInitialScreen();
+  }
 
   void changeLocale(Locale locale) {
     setState(() {
       _locale = locale;
     });
+  }
+
+  Widget _resolveInitialScreen() {
+    if (!TokenStorage.isLoggedIn) {
+      return const WelcomeScreen();
+    }
+
+    final role = TokenStorage.getUserRole();
+
+    if (role == 'seller') {
+      return const SellerHomePage();
+    }
+
+    if (role == 'customer' || role == 'buyer') {
+      return const HomePage(isBuyer: true);
+    }
+
+    return const WelcomeScreen();
   }
 
   @override
@@ -70,7 +98,7 @@ class _MyAppState extends State<MyApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
 
-          home: const WelcomeScreen(),
+          home: _initialScreen,
         );
       },
     );

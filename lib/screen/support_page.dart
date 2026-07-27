@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/features/support/repositories/support_repository.dart';
+import 'package:shamstore/screen/my_support_requests_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -284,6 +285,25 @@ class _SupportPageState extends State<SupportPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: _isSubmitting
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MySupportRequestsPage(),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.history_outlined, size: 18),
+                label: const Text('عرض طلباتي'),
               ),
             ),
           ],

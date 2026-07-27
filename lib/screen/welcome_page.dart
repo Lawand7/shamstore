@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/screen/login_page.dart';
+import 'package:shamstore/screen/widgets/exit_confirmation_scope.dart';
 import 'package:shamstore/them/app_theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -16,7 +17,7 @@ class WelcomeScreen extends StatelessWidget {
     final Color buttonActiveBg = isDarkMode ? AppTheme.selectedBorder : AppTheme.white;
     final Color buttonActiveText = isDarkMode ? AppTheme.darkBackground : AppTheme.primary;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: barBackground,
       body: SafeArea(
         child: Padding(
@@ -112,5 +113,7 @@ class WelcomeScreen extends StatelessWidget {
         ),
       ),
     );
+
+    return ExitConfirmationScope(child: scaffold);
   }
 }

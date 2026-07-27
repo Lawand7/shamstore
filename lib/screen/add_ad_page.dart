@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
-import 'package:shamstore/screen/home_page.dart';
+import 'package:shamstore/features/ads/repositories/advertisement_repository.dart';
 
 class AddAdPage extends StatefulWidget {
   const AddAdPage({super.key});
@@ -16,13 +16,45 @@ class _AddAdPageState extends State<AddAdPage> {
   final _adTitleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _phoneController = TextEditingController();
+  final AdvertisementRepository _advertisementRepository =
+      AdvertisementRepository();
 
   String? _selectedGovernorate;
   bool _isPaid = false;
+  bool _isSubmitting = false;
   final List<String> _governorates = [
-    'دمشق', 'ريف دمشق', 'حلب', 'حمص', 'حماة', 'اللاذقية',
-    'طرطوس', 'إدلب', 'دير الزور', 'الرقة', 'الحسكة', 'درعا', 'السويداء', 'القنيطرة'
+    'دمشق',
+    'ريف دمشق',
+    'حلب',
+    'حمص',
+    'حماة',
+    'اللاذقية',
+    'طرطوس',
+    'إدلب',
+    'دير الزور',
+    'الرقة',
+    'الحسكة',
+    'درعا',
+    'السويداء',
+    'القنيطرة',
   ];
+
+  static const Map<String, String> _governorateApiValues = {
+    'دمشق': 'Damascus',
+    'ريف دمشق': 'Rif Dimashq',
+    'حلب': 'Aleppo',
+    'حمص': 'Homs',
+    'حماة': 'Hama',
+    'اللاذقية': 'Latakia',
+    'طرطوس': 'Tartous',
+    'إدلب': 'Idlib',
+    'دير الزور': 'Deir el-Zor',
+    'الرقة': 'Raqqa',
+    'الحسكة': 'Hasakah',
+    'درعا': 'Daraa',
+    'السويداء': 'Suwayda',
+    'القنيطرة': 'Quneitra',
+  };
 
   @override
   void dispose() {
@@ -32,18 +64,47 @@ class _AddAdPageState extends State<AddAdPage> {
     super.dispose();
   }
 
-  void _submitAd() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _submitAd() async {
+    if (!_formKey.currentState!.validate() || _selectedGovernorate == null) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final message = await _advertisementRepository.createAd(
+        title: _adTitleController.text,
+        phoneNumber: _phoneController.text,
+        description: _descriptionController.text,
+        governorate: _governorateApiValue(_selectedGovernorate!),
+        amount: 100,
+      );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).translate('Ad published successfully'),
+            message,
             textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
           ),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      final message = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -53,18 +114,26 @@ class _AddAdPageState extends State<AddAdPage> {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
         title: Text(
           AppLocalizations.of(context).translate('Add Ad Title'),
-          style: const TextStyle(color: AppTheme.white, fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: AppTheme.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
           icon: Icon(
-            isArabic ? Icons.arrow_back_ios_rounded : Icons.arrow_back_ios_new_rounded,
+            isArabic
+                ? Icons.arrow_back_ios_rounded
+                : Icons.arrow_back_ios_new_rounded,
             color: AppTheme.white,
             size: 20,
           ),
@@ -78,72 +147,147 @@ class _AddAdPageState extends State<AddAdPage> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isArabic
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
-                _buildLabel(AppLocalizations.of(context).translate('Ad Title Label'), isDarkMode),
+                _buildLabel(
+                  AppLocalizations.of(context).translate('Ad Title Label'),
+                  isDarkMode,
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _adTitleController,
                   textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                  style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                  decoration: _inputDecoration(AppLocalizations.of(context).translate('Ad Title Hint'), isDarkMode),
-                  validator: (val) => val!.isEmpty ? AppLocalizations.of(context).translate('Required Field') : null,
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? AppTheme.textPrimary
+                        : AppTheme.textDark,
+                  ),
+                  decoration: _inputDecoration(
+                    AppLocalizations.of(context).translate('Ad Title Hint'),
+                    isDarkMode,
+                  ),
+                  validator: (val) => val!.isEmpty
+                      ? AppLocalizations.of(context).translate('Required Field')
+                      : null,
                 ),
                 const SizedBox(height: 20),
 
-                _buildLabel(AppLocalizations.of(context).translate('Governorate Label'), isDarkMode),
+                _buildLabel(
+                  AppLocalizations.of(context).translate('Governorate Label'),
+                  isDarkMode,
+                ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedGovernorate,
-                  alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                  dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+                  alignment: isArabic
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  dropdownColor: isDarkMode
+                      ? AppTheme.cardBackground
+                      : AppTheme.white,
                   hint: Text(
-                    AppLocalizations.of(context).translate('Select Governorate Hint'),
-                    style: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 13),
+                    AppLocalizations.of(
+                      context,
+                    ).translate('Select Governorate Hint'),
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? AppTheme.textSecondary
+                          : AppTheme.textLight,
+                      fontSize: 13,
+                    ),
                   ),
                   decoration: _inputDecoration('', isDarkMode),
-                  icon: Icon(Icons.arrow_drop_down, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+                  ),
                   items: _governorates.map((gov) {
                     return DropdownMenuItem<String>(
                       value: gov,
                       child: Text(
                         AppLocalizations.of(context).translate(gov),
-                        style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark, fontSize: 13),
+                        style: TextStyle(
+                          color: isDarkMode
+                              ? AppTheme.textPrimary
+                              : AppTheme.textDark,
+                          fontSize: 13,
+                        ),
                       ),
                     );
                   }).toList(),
-                  onChanged: (value) => setState(() => _selectedGovernorate = value),
-                  validator: (val) => val == null ? AppLocalizations.of(context).translate('Required Field') : null,
+                  onChanged: (value) =>
+                      setState(() => _selectedGovernorate = value),
+                  validator: (val) => val == null
+                      ? AppLocalizations.of(context).translate('Required Field')
+                      : null,
                 ),
                 const SizedBox(height: 20),
 
-                _buildLabel(AppLocalizations.of(context).translate('Phone Number Label'), isDarkMode),
+                _buildLabel(
+                  AppLocalizations.of(context).translate('Phone Number Label'),
+                  isDarkMode,
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   textAlign: TextAlign.left,
-                  style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                  decoration: _inputDecoration('09xxxxxxxx', isDarkMode).copyWith(
-                    prefixIcon: Icon(Icons.phone_android_rounded, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, size: 18),
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? AppTheme.textPrimary
+                        : AppTheme.textDark,
                   ),
+                  decoration: _inputDecoration('09xxxxxxxx', isDarkMode)
+                      .copyWith(
+                        prefixIcon: Icon(
+                          Icons.phone_android_rounded,
+                          color: isDarkMode
+                              ? AppTheme.accentBlue
+                              : AppTheme.primary,
+                          size: 18,
+                        ),
+                      ),
                   validator: (val) {
-                    if (val!.isEmpty) return AppLocalizations.of(context).translate('Required Field');
-                    if (val.length < 10) return AppLocalizations.of(context).translate('Invalid Phone');
+                    if (val!.isEmpty)
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('Required Field');
+                    if (val.length < 10)
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('Invalid Phone');
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
 
-                _buildLabel(AppLocalizations.of(context).translate('Ad Description Label'), isDarkMode),
+                _buildLabel(
+                  AppLocalizations.of(
+                    context,
+                  ).translate('Ad Description Label'),
+                  isDarkMode,
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 4,
                   textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                  style: TextStyle(color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                  decoration: _inputDecoration(AppLocalizations.of(context).translate('Ad Description Hint'), isDarkMode),
-                  validator: (val) => val!.isEmpty ? AppLocalizations.of(context).translate('Required Field') : null,
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? AppTheme.textPrimary
+                        : AppTheme.textDark,
+                  ),
+                  decoration: _inputDecoration(
+                    AppLocalizations.of(
+                      context,
+                    ).translate('Ad Description Hint'),
+                    isDarkMode,
+                  ),
+                  validator: (val) => val!.isEmpty
+                      ? AppLocalizations.of(context).translate('Required Field')
+                      : null,
                 ),
                 const SizedBox(height: 32),
 
@@ -155,12 +299,16 @@ class _AddAdPageState extends State<AddAdPage> {
                     decoration: BoxDecoration(
                       color: _isPaid
                           ? Colors.green.withOpacity(0.08)
-                          : (isDarkMode ? AppTheme.accentBlue.withOpacity(0.08) : AppTheme.primary.withOpacity(0.08)),
+                          : (isDarkMode
+                                ? AppTheme.accentBlue.withOpacity(0.08)
+                                : AppTheme.primary.withOpacity(0.08)),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: _isPaid
                             ? Colors.green.withOpacity(0.3)
-                            : (isDarkMode ? AppTheme.accentBlue.withOpacity(0.3) : AppTheme.primary.withOpacity(0.2)),
+                            : (isDarkMode
+                                  ? AppTheme.accentBlue.withOpacity(0.3)
+                                  : AppTheme.primary.withOpacity(0.2)),
                         width: 1,
                       ),
                     ),
@@ -168,39 +316,63 @@ class _AddAdPageState extends State<AddAdPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: isArabic
                           ? [
-                        _buildPayButton(isDarkMode),
-                        Row(
-                          children: [
-                            Text(
-                              '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 ليرة سورية',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              _isPaid ? Icons.check_circle_rounded : Icons.payments_outlined,
-                              color: _isPaid ? Colors.green : (isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ]
+                              _buildPayButton(isDarkMode),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 ليرة سورية',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkMode
+                                          ? AppTheme.textPrimary
+                                          : AppTheme.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    _isPaid
+                                        ? Icons.check_circle_rounded
+                                        : Icons.payments_outlined,
+                                    color: _isPaid
+                                        ? Colors.green
+                                        : (isDarkMode
+                                              ? AppTheme.accentBlue
+                                              : AppTheme.primary),
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ]
                           : [
-                        Row(
-                          children: [
-                            Icon(
-                              _isPaid ? Icons.check_circle_rounded : Icons.payments_outlined,
-                              color: _isPaid ? Colors.green : (isDarkMode ? AppTheme.accentBlue : AppTheme.primary),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 SYP',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
-                            ),
-                          ],
-                        ),
-                        _buildPayButton(isDarkMode),
-                      ],
+                              Row(
+                                children: [
+                                  Icon(
+                                    _isPaid
+                                        ? Icons.check_circle_rounded
+                                        : Icons.payments_outlined,
+                                    color: _isPaid
+                                        ? Colors.green
+                                        : (isDarkMode
+                                              ? AppTheme.accentBlue
+                                              : AppTheme.primary),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 SYP',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkMode
+                                          ? AppTheme.textPrimary
+                                          : AppTheme.textDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              _buildPayButton(isDarkMode),
+                            ],
                     ),
                   ),
                 ),
@@ -210,18 +382,39 @@ class _AddAdPageState extends State<AddAdPage> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _isPaid ? _submitAd : null,
+                    onPressed: _isPaid && !_isSubmitting ? _submitAd : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDarkMode ? AppTheme.selectedBorder : Colors.blue,
-                      disabledBackgroundColor: (isDarkMode ? AppTheme.selectedBorder : Colors.blue).withOpacity(0.3),
+                      backgroundColor: isDarkMode
+                          ? AppTheme.selectedBorder
+                          : Colors.blue,
+                      disabledBackgroundColor:
+                          (isDarkMode ? AppTheme.selectedBorder : Colors.blue)
+                              .withOpacity(0.3),
                       disabledForegroundColor: Colors.white.withOpacity(0.6),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: _isPaid ? 2 : 0,
                     ),
-                    child: Text(
-                      AppLocalizations.of(context).translate('Publish Ad Button'),
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            AppLocalizations.of(
+                              context,
+                            ).translate('Publish Ad Button'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -237,26 +430,25 @@ class _AddAdPageState extends State<AddAdPage> {
       onTap: _isPaid
           ? null
           : () {
-        setState(() {
-          _isPaid = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تمت عملية الدفع بنجاح! يمكنك الآن نشر الإعلان.', textAlign: TextAlign.center),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      },
+              setState(() {
+                _isPaid = true;
+              });
+            },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: _isPaid ? Colors.green : (isDarkMode ? AppTheme.selectedBorder : AppTheme.primary),
+          color: _isPaid
+              ? Colors.green
+              : (isDarkMode ? AppTheme.selectedBorder : AppTheme.primary),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           _isPaid ? 'تم الدفع ✓' : 'دفع',
-          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -265,24 +457,56 @@ class _AddAdPageState extends State<AddAdPage> {
   Widget _buildLabel(String text, bool isDarkMode) {
     return Text(
       text,
-      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark),
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+      ),
     );
   }
 
   InputDecoration _inputDecoration(String hint, bool isDarkMode) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight, fontSize: 13),
+      hintStyle: TextStyle(
+        color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+        fontSize: 13,
+      ),
       filled: true,
       fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: isDarkMode ? BorderSide.none : const BorderSide(color: AppTheme.border)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary, width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.red, width: 1)),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: isDarkMode
+            ? BorderSide.none
+            : const BorderSide(color: AppTheme.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: isDarkMode
+            ? BorderSide.none
+            : const BorderSide(color: AppTheme.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
     );
   }
 
   bool _isArabic() => Localizations.localeOf(context).languageCode == 'ar';
+
+  String _governorateApiValue(String label) =>
+      _governorateApiValues[label] ?? label;
 }
