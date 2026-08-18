@@ -676,14 +676,22 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              _buildSellerRating(sellerRatingFuture, isDarkMode: isDarkMode),
+              _buildSellerRating(
+                sellerRatingFuture,
+                isArabic: isArabic,
+                isDarkMode: isDarkMode,
+              ),
               const SizedBox(width: 4),
               const Icon(Icons.star, color: Colors.orange, size: 16),
             ]
           : [
               const Icon(Icons.star, color: Colors.orange, size: 16),
               const SizedBox(width: 4),
-              _buildSellerRating(sellerRatingFuture, isDarkMode: isDarkMode),
+              _buildSellerRating(
+                sellerRatingFuture,
+                isArabic: isArabic,
+                isDarkMode: isDarkMode,
+              ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -719,6 +727,7 @@ class ProductDetailsPage extends StatelessWidget {
 
   Widget _buildSellerRating(
     Future<SellerRatingResult> sellerRatingFuture, {
+    required bool isArabic,
     required bool isDarkMode,
   }) {
     return FutureBuilder<SellerRatingResult>(
@@ -730,11 +739,21 @@ class ProductDetailsPage extends StatelessWidget {
           final result = snapshot.data;
 
           if (result?.hasRating == true) {
-            ratingText = result!.averageRating!.toStringAsFixed(2);
+            final rating = result!.averageRating!.toStringAsFixed(0);
+            final count = result.ratingCount;
+
+            if (count > 0) {
+              final countLabel = isArabic
+                  ? (count == 1 ? 'تقييم واحد' : '$count تقييمات')
+                  : (count == 1 ? '1 rating' : '$count ratings');
+              ratingText = '$rating/5 ($countLabel)';
+            } else {
+              ratingText = '$rating/5';
+            }
           } else if (result?.errorMessage != null) {
             ratingText = result!.errorMessage!;
           } else {
-            ratingText = 'لا يوجد تقييم بعد';
+            ratingText = isArabic ? 'لا يوجد تقييم بعد' : 'No ratings yet';
           }
         }
 

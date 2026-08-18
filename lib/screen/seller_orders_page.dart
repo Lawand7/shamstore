@@ -173,6 +173,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     required Color primaryColor,
   }) {
     final bool isSelected = selectedStatus == status;
+    final String displayedTitle = status == 'complete'
+        ? '$title (${_controller.completedOrdersCount.value ?? '—'})'
+        : title;
 
     return Material(
       color: isSelected ? primaryColor : Colors.transparent,
@@ -200,7 +203,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
               const SizedBox(width: 7),
               Flexible(
                 child: Text(
-                  title,
+                  displayedTitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isSelected

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/features/orders/controllers/order_controller.dart';
+import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -60,7 +61,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none, color: AppTheme.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsPage()),
+              );
+            },
           ),
         ],
       ),

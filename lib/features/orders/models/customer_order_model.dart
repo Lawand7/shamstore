@@ -16,6 +16,7 @@ class CustomerOrderModel {
 
   final String shippingImage;
   final String shippingPeriod;
+  final bool hasRating;
 
   final Map<String, dynamic> rawData;
 
@@ -34,6 +35,7 @@ class CustomerOrderModel {
     required this.createdAt,
     required this.shippingImage,
     required this.shippingPeriod,
+    required this.hasRating,
     required this.rawData,
   });
 
@@ -52,6 +54,8 @@ class CustomerOrderModel {
   bool get isInDelivery => isPending && hasCompleteShippingData;
 
   bool get canConfirmDelivery => isInDelivery;
+
+  bool get canRateSeller => isCompleted && !hasRating;
 
   factory CustomerOrderModel.fromJson(Map<String, dynamic> json) {
     final product = _asMap(json['product']);
@@ -82,6 +86,7 @@ class CustomerOrderModel {
       createdAt: _firstText([json['created_at']]),
       shippingImage: _firstText([shipping['image']]),
       shippingPeriod: _firstText([shipping['period']]),
+      hasRating: _toBool(json['has_rating']),
       rawData: Map<String, dynamic>.from(json),
     );
   }
@@ -136,5 +141,19 @@ class CustomerOrderModel {
     }
 
     return double.tryParse(value.toString()) ?? 0;
+  }
+
+  static bool _toBool(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    final normalized = value?.toString().trim().toLowerCase();
+
+    return normalized == 'true' || normalized == '1';
   }
 }

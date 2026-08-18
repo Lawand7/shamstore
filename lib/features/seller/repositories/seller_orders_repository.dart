@@ -6,6 +6,43 @@ import 'package:shamstore/core/network/dio_client.dart';
 import 'package:shamstore/features/seller/models/seller_order_model.dart';
 
 class SellerOrdersRepository {
+  Future<int> getCompletedOrdersCount() async {
+    try {
+      final Response<dynamic> response = await DioClient.dio.get(
+        ApiConstants.sellerCompletedOrdersCount,
+      );
+
+      if (kDebugMode) {
+        debugPrint('========== COMPLETED ORDERS COUNT RESPONSE ==========');
+        debugPrint('Status code: ${response.statusCode}');
+        debugPrint('=====================================================');
+      }
+
+      _throwIfNestedBackendError(response.data);
+
+      final int? count = _findCompletedOrdersCount(response.data);
+
+      if (count == null || count < 0) {
+        throw Exception('صيغة استجابة عدد الطلبات المكتملة غير صحيحة');
+      }
+
+      return count;
+    } on DioException catch (error) {
+      _printDioError(operation: 'LOAD COMPLETED ORDERS COUNT', error: error);
+
+      throw Exception(_handleDioError(error));
+    } on Exception {
+      rethrow;
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('Unexpected completed-orders-count error: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+
+      throw Exception('حدث خطأ غير متوقع أثناء تحميل عدد الطلبات المكتملة');
+    }
+  }
+
   Future<List<SellerOrderModel>> getOrders({required String status}) async {
     final String normalizedStatus = status.trim().toLowerCase();
 
@@ -31,7 +68,7 @@ class SellerOrdersRepository {
 
       final List<dynamic> rawOrders = _extractOrdersList(response.data);
 
-      return rawOrders
+      final orders = rawOrders
           .whereType<Map>()
           .map(
             (dynamic item) => SellerOrderModel.fromJson(
@@ -40,6 +77,12 @@ class SellerOrdersRepository {
           )
           .where((SellerOrderModel order) => order.id > 0)
           .toList();
+
+      if (normalizedStatus == 'complete') {
+        orders.sort(_compareCompletedOrdersNewestFirst);
+      }
+
+      return orders;
     } on DioException catch (error) {
       _printDioError(operation: 'LOAD SELLER ORDERS', error: error);
 
@@ -440,6 +483,69 @@ class SellerOrdersRepository {
     }
 
     return int.tryParse(value.toString().trim());
+  }
+
+  int? _findCompletedOrdersCount(dynamic value) {
+    final int? directCount = _toNullableInt(value);
+
+    if (directCount != null) {
+      return directCount;
+    }
+
+    if (value is! Map) {
+      return null;
+    }
+
+    final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+    final int? completedCount = _toNullableInt(map['completed_orders']);
+
+    if (completedCount != null) {
+      return completedCount;
+    }
+
+    const List<String> nestedKeys = ['data', 'original'];
+
+    for (final String key in nestedKeys) {
+      final int? nestedCount = _findCompletedOrdersCount(map[key]);
+
+      if (nestedCount != null) {
+        return nestedCount;
+      }
+    }
+
+    return null;
+  }
+
+  int _compareCompletedOrdersNewestFirst(
+    SellerOrderModel first,
+    SellerOrderModel second,
+  ) {
+    final DateTime? firstDate = _completionDate(first);
+    final DateTime? secondDate = _completionDate(second);
+
+    if (firstDate != null && secondDate != null) {
+      final int dateComparison = secondDate.compareTo(firstDate);
+
+      if (dateComparison != 0) {
+        return dateComparison;
+      }
+    } else if (firstDate != null) {
+      return -1;
+    } else if (secondDate != null) {
+      return 1;
+    }
+
+    return second.id.compareTo(first.id);
+  }
+
+  DateTime? _completionDate(SellerOrderModel order) {
+    final dynamic rawDate =
+        order.rawData['completed_at'] ??
+        order.rawData['updated_at'] ??
+        order.rawData['created_at'] ??
+        order.createdAt;
+
+    return DateTime.tryParse(rawDate?.toString().trim() ?? '');
   }
 
   void _printDioError({

@@ -31,6 +31,15 @@ class _AddProductPageState extends State<AddProductPage> {
 
   final List<Map<String, dynamic>> _categories = const [
     {'id': 1, 'name': 'Electronics'},
+    {'id': 2, 'name': 'Clothing'},
+    {'id': 3, 'name': 'School Supplies'},
+    {'id': 4, 'name': 'Shoes'},
+    {'id': 5, 'name': 'Books'},
+    {'id': 6, 'name': 'Furniture'},
+    {'id': 7, 'name': 'Housewares'},
+    {'id': 8, 'name': 'Cosmetics'},
+    {'id': 9, 'name': 'Sports'},
+    {'id': 10, 'name': 'Games'},
   ];
 
   final List<String> _governorates = [

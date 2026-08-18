@@ -68,24 +68,24 @@ class _SearchPageState extends State<SearchPage> {
     },
     {
       'id': 3,
+      'name': 'مستلزمات مدرسية',
+      'translationKey': 'School Supplies',
+      'icon': Icons.school_rounded,
+      'color': Color(0xFF2563EB),
+    },
+    {
+      'id': 4,
       'name': 'أحذية',
       'translationKey': 'Shoes',
       'icon': Icons.ice_skating_rounded,
       'color': Color(0xFFE11D48),
     },
     {
-      'id': 4,
+      'id': 5,
       'name': 'كتب',
       'translationKey': 'Books',
       'icon': Icons.menu_book_rounded,
       'color': Color(0xFF059669),
-    },
-    {
-      'id': 5,
-      'name': 'رياضة',
-      'translationKey': 'Sports',
-      'icon': Icons.sports_basketball_rounded,
-      'color': Color(0xFFD97706),
     },
     {
       'id': 6,
@@ -96,10 +96,10 @@ class _SearchPageState extends State<SearchPage> {
     },
     {
       'id': 7,
-      'name': 'مستلزمات مدرسية',
-      'translationKey': 'School Supplies',
-      'icon': Icons.school_rounded,
-      'color': Color(0xFF2563EB),
+      'name': 'أدوات منزلية',
+      'translationKey': 'Housewares',
+      'icon': Icons.blender_rounded,
+      'color': Color(0xFF0D9488),
     },
     {
       'id': 8,
@@ -110,10 +110,10 @@ class _SearchPageState extends State<SearchPage> {
     },
     {
       'id': 9,
-      'name': 'أدوات منزلية',
-      'translationKey': 'Housewares',
-      'icon': Icons.blender_rounded,
-      'color': Color(0xFF0D9488),
+      'name': 'رياضة',
+      'translationKey': 'Sports',
+      'icon': Icons.sports_basketball_rounded,
+      'color': Color(0xFFD97706),
     },
     {
       'id': 10,

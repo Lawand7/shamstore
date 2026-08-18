@@ -514,6 +514,102 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final normalizedTitle = notification.title.trim().toLowerCase();
     final body = notification.body.trim();
 
+    if (normalizedTitle == 'newadvertisment' ||
+        normalizedTitle == 'new advertisement') {
+      return const _NotificationPresentation(
+        title: 'طلب إعلان جديد',
+        body: 'يوجد طلب جديد لإضافة إعلان بانتظار المراجعة.',
+        icon: Icons.campaign_outlined,
+        color: Colors.blue,
+      );
+    }
+
+    if (normalizedTitle == 'unacceptedadvertisment' ||
+        normalizedTitle == 'unaccepted advertisement') {
+      final advertisementId = _advertisementIdFromBody(body);
+
+      return _NotificationPresentation(
+        title: 'تم رفض إعلانك',
+        body: advertisementId == null
+            ? 'تم رفض إعلانك وإعادة رسوم النشر البالغة 100 ل.س إلى محفظتك.'
+            : 'تم رفض إعلانك رقم $advertisementId وإعادة رسوم النشر البالغة 100 ل.س إلى محفظتك.',
+        icon: Icons.cancel_outlined,
+        color: Colors.red,
+      );
+    }
+
+    if (normalizedTitle == 'acceptedadvertisment' ||
+        normalizedTitle == 'accepted advertisement') {
+      final advertisementId = _advertisementIdFromBody(body);
+
+      return _NotificationPresentation(
+        title: 'تم قبول إعلانك',
+        body: advertisementId == null
+            ? 'تم قبول إعلانك ونشره بنجاح.'
+            : 'تم قبول إعلانك رقم $advertisementId ونشره بنجاح.',
+        icon: Icons.verified_outlined,
+        color: Colors.green,
+      );
+    }
+
+    if (normalizedTitle == 'newdeposittransaction') {
+      return const _NotificationPresentation(
+        title: 'طلب شحن محفظة جديد',
+        body: 'يوجد طلب جديد لشحن محفظة بانتظار مراجعة الأدمن.',
+        icon: Icons.add_card_outlined,
+        color: Colors.blue,
+      );
+    }
+
+    if (normalizedTitle == 'newwithdrawtransaction') {
+      return const _NotificationPresentation(
+        title: 'طلب سحب جديد',
+        body: 'يوجد طلب جديد لسحب رصيد بانتظار مراجعة الأدمن.',
+        icon: Icons.request_page_outlined,
+        color: Colors.orange,
+      );
+    }
+
+    if (normalizedTitle == 'deposittransaction') {
+      final transactionId = _transactionIdFromBody(body);
+      final isRejected = body.toLowerCase().contains('was unaccepted');
+
+      return _NotificationPresentation(
+        title: isRejected ? 'تم رفض طلب شحن المحفظة' : 'تم قبول شحن محفظتك',
+        body: isRejected
+            ? transactionId == null
+                  ? 'تم رفض طلب الشحن ولم تتم إضافة الرصيد إلى محفظتك.'
+                  : 'تم رفض طلب الشحن رقم $transactionId ولم تتم إضافة الرصيد إلى محفظتك.'
+            : transactionId == null
+            ? 'تم قبول طلب الشحن وإضافة الرصيد إلى محفظتك.'
+            : 'تم قبول طلب الشحن رقم $transactionId وإضافة الرصيد إلى محفظتك.',
+        icon: isRejected
+            ? Icons.cancel_outlined
+            : Icons.account_balance_wallet_outlined,
+        color: isRejected ? Colors.red : Colors.green,
+      );
+    }
+
+    if (normalizedTitle == 'withdrawtransaction') {
+      final transactionId = _transactionIdFromBody(body);
+      final isRejected = body.toLowerCase().contains('was unaccepted');
+
+      return _NotificationPresentation(
+        title: isRejected ? 'تم رفض طلب السحب' : 'تم قبول طلب السحب',
+        body: isRejected
+            ? transactionId == null
+                  ? 'تم رفض طلب السحب وإعادة المبلغ المحجوز إلى محفظتك.'
+                  : 'تم رفض طلب السحب رقم $transactionId وإعادة المبلغ المحجوز إلى محفظتك.'
+            : transactionId == null
+            ? 'تم قبول طلب السحب بنجاح.'
+            : 'تم قبول طلب السحب رقم $transactionId بنجاح.',
+        icon: isRejected
+            ? Icons.currency_exchange_outlined
+            : Icons.price_check_outlined,
+        color: isRejected ? Colors.red : Colors.green,
+      );
+    }
+
     if (normalizedTitle.contains('new order received')) {
       return _NotificationPresentation(
         title: 'طلب جديد',
@@ -591,6 +687,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ? AppTheme.accentBlue
           : AppTheme.primary,
     );
+  }
+
+  String? _advertisementIdFromBody(String body) {
+    return RegExp(
+      r'advertisment id\s*:\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(body)?.group(1);
+  }
+
+  String? _transactionIdFromBody(String body) {
+    return RegExp(
+      r'transaction id\s*:\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(body)?.group(1);
   }
 
   String _translateOrderShippedBody(String body) {

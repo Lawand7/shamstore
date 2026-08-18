@@ -974,7 +974,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
       final bool isConfirming = _controller.isConfirming(order.id);
 
-      final bool isRating = _controller.isRatingSeller(order.sellerId);
+      final bool isRating = _controller.isRatingSeller(order.id);
 
       return Wrap(
         alignment: WrapAlignment.end,
@@ -992,7 +992,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                     _showReportBottomSheet(order, isDarkMode);
                   },
           ),
-          if (order.isCompleted)
+          if (order.canRateSeller)
             _actionButton(
               label: 'تقييم',
               icon: Icons.star_border,
@@ -1470,7 +1470,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 ),
                 Obx(() {
                   final bool isSending = _controller.isRatingSeller(
-                    order.sellerId,
+                    order.id,
                   );
 
                   return ElevatedButton(
@@ -1484,7 +1484,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
                             final String? message = await _controller
                                 .rateSeller(
-                                  sellerId: order.sellerId,
+                                  orderId: order.id,
                                   value: selectedRating,
                                 );
 

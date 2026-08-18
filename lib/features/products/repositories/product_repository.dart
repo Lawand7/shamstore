@@ -23,9 +23,14 @@ class ProductPageResult {
 
 class SellerRatingResult {
   final double? averageRating;
+  final int ratingCount;
   final String? errorMessage;
 
-  const SellerRatingResult({this.averageRating, this.errorMessage});
+  const SellerRatingResult({
+    this.averageRating,
+    this.ratingCount = 0,
+    this.errorMessage,
+  });
 
   bool get hasRating => averageRating != null && averageRating! > 0;
 }
@@ -84,12 +89,23 @@ class ProductRepository {
       }
 
       final map = Map<String, dynamic>.from(data);
+      final nestedMap = map['data'] is Map
+          ? Map<String, dynamic>.from(map['data'] as Map)
+          : <String, dynamic>{};
       final rawRating =
+          map['most_common_rating'] ??
           map['average_rating'] ??
-          (map['data'] is Map ? (map['data'] as Map)['average_rating'] : null);
+          nestedMap['most_common_rating'] ??
+          nestedMap['average_rating'];
       final rating = _toDouble(rawRating);
+      final ratingCount = _toInt(
+        map['rating_count'] ?? nestedMap['rating_count'],
+      );
 
-      return SellerRatingResult(averageRating: rating > 0 ? rating : null);
+      return SellerRatingResult(
+        averageRating: rating > 0 ? rating : null,
+        ratingCount: ratingCount,
+      );
     } on DioException catch (error) {
       return SellerRatingResult(errorMessage: _sellerRatingError(error));
     } catch (_) {
@@ -289,6 +305,14 @@ class ProductRepository {
   String _handleDioError(DioException e) {
     final responseData = e.response?.data;
 
+    if (e.response?.statusCode == 401) {
+      return 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول من جديد';
+    }
+
+    if (e.response?.statusCode == 403) {
+      return 'لا تملك صلاحية الوصول إلى المنتجات';
+    }
+
     if (responseData is Map<String, dynamic>) {
       if (responseData['message'] != null) {
         return responseData['message'].toString();
@@ -325,14 +349,6 @@ class ProductRepository {
 
     if (e.response?.statusCode == 400) {
       return 'الطلب غير صالح';
-    }
-
-    if (e.response?.statusCode == 401) {
-      return 'غير مصرح. يرجى تسجيل الدخول من جديد';
-    }
-
-    if (e.response?.statusCode == 403) {
-      return 'لا تملك صلاحية الوصول إلى المنتجات';
     }
 
     if (e.response?.statusCode == 404) {

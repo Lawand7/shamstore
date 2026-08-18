@@ -12,18 +12,32 @@ class ChargeWalletPage extends StatefulWidget {
 
 class _ChargeWalletPageState extends State<ChargeWalletPage> {
   final WalletRepository _walletRepository = WalletRepository();
+  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _transferNumberController =
       TextEditingController();
   bool _isSubmitting = false;
 
   @override
   void dispose() {
+    _amountController.dispose();
     _transferNumberController.dispose();
     super.dispose();
   }
 
   Future<void> _submitDeposit() async {
+    final amount = _amountController.text.trim();
     final transferNumber = _transferNumberController.text.trim();
+    final parsedAmount = num.tryParse(amount);
+
+    if (parsedAmount == null || parsedAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('أدخل مبلغ شحن صحيحًا أكبر من الصفر'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     if (transferNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -38,6 +52,7 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
     try {
       final message = await _walletRepository.deposit(
         transferNumber: transferNumber,
+        amount: amount,
       );
       if (!mounted) return;
 
@@ -252,6 +267,54 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            'مبلغ الشحن',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _amountController,
+            enabled: !_isSubmitting,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => setState(() {}),
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            ),
+            decoration: InputDecoration(
+              hintText: 'أدخل المبلغ المحوّل عبر ShamCash',
+              hintStyle: TextStyle(
+                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+                fontSize: 12,
+              ),
+              prefixIcon: Icon(Icons.payments_outlined, color: activeColor),
+              filled: true,
+              fillColor: isDarkMode
+                  ? AppTheme.inputFieldBg
+                  : AppTheme.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDarkMode ? Colors.transparent : AppTheme.border,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDarkMode ? Colors.transparent : AppTheme.border,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: activeColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
             'رقم عملية التحويل',
             style: TextStyle(
               fontSize: 15,
@@ -317,7 +380,9 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed:
-            _transferNumberController.text.trim().isNotEmpty && !_isSubmitting
+            _amountController.text.trim().isNotEmpty &&
+                _transferNumberController.text.trim().isNotEmpty &&
+                !_isSubmitting
             ? _submitDeposit
             : null,
         style: ElevatedButton.styleFrom(

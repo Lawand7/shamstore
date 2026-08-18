@@ -29,7 +29,7 @@ class CustomerOrdersRepository {
 
       final rawOrders = _extractOrdersList(response.data);
 
-      return rawOrders
+      final orders = rawOrders
           .whereType<Map>()
           .map(
             (item) =>
@@ -37,6 +37,12 @@ class CustomerOrdersRepository {
           )
           .where((order) => order.id > 0)
           .toList();
+
+      if (normalizedStatus == 'complete') {
+        orders.sort(_compareCompletedOrdersNewestFirst);
+      }
+
+      return orders;
     } on DioException catch (error) {
       _debugDioError(operation: 'GET CUSTOMER ORDERS', error: error);
 
@@ -91,9 +97,9 @@ class CustomerOrdersRepository {
     );
   }
 
-  Future<String> rateSeller({required int sellerId, required int value}) async {
-    if (sellerId <= 0) {
-      throw Exception('تعذر تحديد البائع المرتبط بهذا الطلب');
+  Future<String> rateSeller({required int orderId, required int value}) async {
+    if (orderId <= 0) {
+      throw Exception('تعذر تحديد الطلب المرتبط بهذا التقييم');
     }
 
     if (value < 1 || value > 5) {
@@ -103,7 +109,7 @@ class CustomerOrdersRepository {
     return _executePostAction(
       operation: 'RATE SELLER',
       path: ApiConstants.rateSeller,
-      queryParameters: {'seller_id': sellerId, 'value': value},
+      data: {'order_id': orderId, 'value': value},
       fallbackMessage: 'تم إرسال تقييم البائع بنجاح',
     );
   }
@@ -113,11 +119,13 @@ class CustomerOrdersRepository {
     required String path,
     required String fallbackMessage,
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? data,
   }) async {
     try {
       final response = await DioClient.dio.post(
         path,
         queryParameters: queryParameters,
+        data: data,
       );
 
       if (kDebugMode) {
@@ -125,7 +133,8 @@ class CustomerOrdersRepository {
         debugPrint('Path: $path');
         debugPrint('Status Code: ${response.statusCode}');
         debugPrint('Query Parameters: $queryParameters');
-        debugPrint('Data: ${response.data}');
+        debugPrint('Request Data: $data');
+        debugPrint('Response Data: ${response.data}');
         debugPrint('=========================================');
       }
 
@@ -396,6 +405,19 @@ class CustomerOrdersRepository {
       return 'الطلب المطلوب غير موجود';
     }
 
+    if (normalized.contains('already been rated') ||
+        normalized.contains('already rated')) {
+      return 'سبق أن قيّمت هذا المنتج، ولا يمكن تقييمه مرة ثانية';
+    }
+
+    if (normalized.contains('only completed orders can be rated')) {
+      return 'لا يمكن تقييم البائع قبل اكتمال الطلب';
+    }
+
+    if (normalized.contains('does not belong to the authenticated customer')) {
+      return 'لا يمكنك تقييم طلب لا يخص حسابك';
+    }
+
     if (normalized.contains('already completed') ||
         normalized.contains('already complete')) {
       return 'تم تأكيد هذا الطلب مسبقاً';
@@ -431,6 +453,38 @@ class CustomerOrdersRepository {
     }
 
     return message.trim();
+  }
+
+  int _compareCompletedOrdersNewestFirst(
+    CustomerOrderModel first,
+    CustomerOrderModel second,
+  ) {
+    final DateTime? firstDate = _completionDate(first);
+    final DateTime? secondDate = _completionDate(second);
+
+    if (firstDate != null && secondDate != null) {
+      final int dateComparison = secondDate.compareTo(firstDate);
+
+      if (dateComparison != 0) {
+        return dateComparison;
+      }
+    } else if (firstDate != null) {
+      return -1;
+    } else if (secondDate != null) {
+      return 1;
+    }
+
+    return second.id.compareTo(first.id);
+  }
+
+  DateTime? _completionDate(CustomerOrderModel order) {
+    final dynamic rawDate =
+        order.rawData['completed_at'] ??
+        order.rawData['updated_at'] ??
+        order.rawData['created_at'] ??
+        order.createdAt;
+
+    return DateTime.tryParse(rawDate?.toString().trim() ?? '');
   }
 
   void _debugDioError({

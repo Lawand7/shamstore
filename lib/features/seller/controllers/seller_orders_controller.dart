@@ -15,6 +15,10 @@ class SellerOrdersController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxString selectedStatus = 'pending'.obs;
 
+  final RxnInt completedOrdersCount = RxnInt();
+  final RxBool isLoadingCompletedOrdersCount = false.obs;
+  final RxString completedOrdersCountError = ''.obs;
+
   final RxBool isRejectingOrder = false.obs;
   final RxInt rejectingOrderId = 0.obs;
 
@@ -28,6 +32,7 @@ class SellerOrdersController extends GetxController {
   void onInit() {
     super.onInit();
     fetchOrders();
+    fetchCompletedOrdersCount();
   }
 
   Future<bool> fetchOrders({String? status}) async {
@@ -82,7 +87,31 @@ class SellerOrdersController extends GetxController {
   }
 
   Future<void> refreshOrders() async {
-    await fetchOrders(status: selectedStatus.value);
+    await Future.wait<bool>([
+      fetchOrders(status: selectedStatus.value),
+      fetchCompletedOrdersCount(),
+    ]);
+  }
+
+  Future<bool> fetchCompletedOrdersCount() async {
+    if (isLoadingCompletedOrdersCount.value) {
+      return false;
+    }
+
+    isLoadingCompletedOrdersCount.value = true;
+    completedOrdersCountError.value = '';
+
+    try {
+      completedOrdersCount.value = await _repository.getCompletedOrdersCount();
+
+      return true;
+    } catch (error) {
+      completedOrdersCountError.value = _cleanErrorMessage(error);
+
+      return false;
+    } finally {
+      isLoadingCompletedOrdersCount.value = false;
+    }
   }
 
   Future<bool> rejectOrder({required int orderId}) async {

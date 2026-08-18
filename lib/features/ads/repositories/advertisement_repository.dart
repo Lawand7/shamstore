@@ -22,6 +22,59 @@ class AdvertisementRepository {
     'declined',
   };
 
+  Future<AdsPageResult> getApprovedAds({int page = 1}) async {
+    if (page <= 0) {
+      throw Exception('رقم صفحة الإعلانات غير صحيح');
+    }
+
+    try {
+      final response = await DioClient.dio.get(
+        ApiConstants.allApprovedAds,
+        queryParameters: {'page': page},
+      );
+      final responseData = response.data;
+
+      if (responseData is! Map) {
+        throw Exception('صيغة استجابة الإعلانات العامة غير متوقعة');
+      }
+
+      final map = Map<String, dynamic>.from(responseData);
+      final rawWrapper = map['Advertisment'];
+
+      if (rawWrapper is! Map || rawWrapper['data'] is! List) {
+        throw Exception('لم يتم العثور على قائمة الإعلانات العامة');
+      }
+
+      final wrapper = Map<String, dynamic>.from(rawWrapper);
+      final ads = (wrapper['data'] as List<dynamic>)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .where(
+            (ad) =>
+                _toInt(ad['id']) > 0 &&
+                ad['status']?.toString().trim().toLowerCase() == 'approved',
+          )
+          .toList();
+
+      final rawPagination = map['pagination'];
+      final pagination = rawPagination is Map
+          ? Map<String, dynamic>.from(rawPagination)
+          : wrapper;
+
+      return AdsPageResult(
+        ads: ads,
+        currentPage: _toInt(pagination['current_page'], fallback: page),
+        lastPage: _toInt(pagination['last_page'], fallback: 1),
+      );
+    } on DioException catch (error) {
+      throw Exception(_handleDioError(error));
+    } on Exception {
+      rethrow;
+    } catch (error) {
+      throw Exception(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
   Future<AdsPageResult> getMyAdsByStatus({
     required String status,
     int page = 1,
@@ -83,7 +136,6 @@ class AdvertisementRepository {
     required String phoneNumber,
     required String description,
     required String governorate,
-    required double amount,
   }) async {
     try {
       final response = await DioClient.dio.post(
@@ -93,7 +145,6 @@ class AdvertisementRepository {
           'phone_number': phoneNumber.trim(),
           'description': description.trim(),
           'governorate': governorate,
-          'amount': amount,
         },
       );
 

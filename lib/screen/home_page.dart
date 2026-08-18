@@ -59,12 +59,16 @@ class _HomePageState extends State<HomePage> {
   bool get _isSeller => !_isBuyer;
 
   final List<String> _categoryKeys = [
-    'cat_electronics',
-    'cat_clothing',
-    'cat_shoes',
-    'cat_books',
-    'cat_furniture',
-    'cat_sports',
+    'Electronics',
+    'Clothing',
+    'School Supplies',
+    'Shoes',
+    'Books',
+    'Furniture',
+    'Housewares',
+    'Cosmetics',
+    'Sports',
+    'Games',
   ];
 
   @override
@@ -434,7 +438,7 @@ class _HomePageState extends State<HomePage> {
                     await _refreshProducts();
                   },
                   child: Obx(() {
-                    final count = _customerController.cartItemsCount;
+                    final count = _customerController.cartDistinctProductsCount;
 
                     return Stack(
                       clipBehavior: Clip.none,

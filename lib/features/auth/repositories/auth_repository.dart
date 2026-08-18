@@ -99,9 +99,7 @@ class AuthRepository {
     }
   }
 
-  Future<Map<String, dynamic>> sendOtp({
-    required String email,
-  }) async {
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
     try {
       final response = await DioClient.dio.post(
         ApiConstants.sendOtp,
@@ -228,17 +226,12 @@ class AuthRepository {
 
         if (data is String) {
           return {
-            'message': data.trim().isNotEmpty
-                ? data
-                : 'تم تغيير رمز PIN بنجاح',
+            'message': data.trim().isNotEmpty ? data : 'تم تغيير رمز PIN بنجاح',
             'pin': newPin,
           };
         }
 
-        return {
-          'message': 'تم تغيير رمز PIN بنجاح',
-          'pin': newPin,
-        };
+        return {'message': 'تم تغيير رمز PIN بنجاح', 'pin': newPin};
       }
 
       throw Exception('فشل تغيير رمز PIN. كود الخطأ: $statusCode');
@@ -396,9 +389,7 @@ class AuthRepository {
           };
         }
 
-        return {
-          'message': 'تم تحديث الملف الشخصي بنجاح',
-        };
+        return {'message': 'تم تحديث الملف الشخصي بنجاح'};
       }
 
       throw Exception('فشل تحديث الملف الشخصي. كود الخطأ: $statusCode');
@@ -432,15 +423,11 @@ class AuthRepository {
 
         if (data is String) {
           return {
-            'message': data.trim().isNotEmpty
-                ? data
-                : 'تم تسجيل الخروج بنجاح',
+            'message': data.trim().isNotEmpty ? data : 'تم تسجيل الخروج بنجاح',
           };
         }
 
-        return {
-          'message': 'تم تسجيل الخروج بنجاح',
-        };
+        return {'message': 'تم تسجيل الخروج بنجاح'};
       }
 
       throw Exception('فشل تسجيل الخروج. كود الخطأ: $statusCode');
@@ -504,6 +491,24 @@ class AuthRepository {
 
   String _handleDioError(DioException e) {
     final responseData = e.response?.data;
+    final backendMessage = responseData is Map
+        ? responseData['message']?.toString().trim() ?? ''
+        : responseData?.toString().trim() ?? '';
+
+    if (backendMessage.contains('No query results for model') &&
+        backendMessage.contains('User')) {
+      return 'لا يوجد حساب مسجل بهذا البريد الإلكتروني';
+    }
+
+    if (e.response?.statusCode == 401) {
+      return 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول من جديد';
+    }
+
+    if (e.response?.statusCode == 422) {
+      return backendMessage.isNotEmpty
+          ? backendMessage
+          : 'البيانات المرسلة غير صحيحة';
+    }
 
     if (responseData is Map<String, dynamic>) {
       if (responseData['message'] != null) {
@@ -543,19 +548,8 @@ class AuthRepository {
       return 'تعذر الاتصال بالسيرفر. تأكد أن Laravel يعمل وأن الهاتف متصل بشكل صحيح';
     }
 
-    if (e.response?.statusCode == 401) {
-      return 'غير مصرح. يرجى تسجيل الدخول من جديد';
-    }
-
     if (e.response?.statusCode == 404) {
       return 'الرابط غير موجود في Laravel';
-    }
-
-    if (e.response?.statusCode == 422) {
-      return responseData is Map<String, dynamic> &&
-              responseData['message'] != null
-          ? responseData['message'].toString()
-          : 'البيانات المرسلة غير صحيحة';
     }
 
     if (e.response?.statusCode == 500) {

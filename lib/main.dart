@@ -7,6 +7,7 @@ import 'package:get_storage/get_storage.dart';
 import 'firebase_options.dart';
 import 'package:shamstore/services/firebase_notification_service.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/core/network/dio_client.dart';
 import 'package:shamstore/core/storage/token_storage.dart';
 import 'package:shamstore/screen/home_page.dart';
 import 'package:shamstore/screen/seller_home_page.dart';
@@ -21,6 +22,12 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await GetStorage.init();
+
+  DioClient.onUnauthorized = () async {
+    if (Get.key.currentState == null) return;
+
+    Get.offAll<void>(() => const WelcomeScreen());
+  };
 
   await FirebaseNotificationService.initialize();
 

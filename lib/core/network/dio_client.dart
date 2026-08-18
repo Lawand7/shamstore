@@ -7,6 +7,9 @@ import '../storage/token_storage.dart';
 class DioClient {
   DioClient._();
 
+  static Future<void> Function()? onUnauthorized;
+  static bool _isHandlingUnauthorized = false;
+
   static final Dio dio =
       Dio(
           BaseOptions(
@@ -22,8 +25,12 @@ class DioClient {
             onRequest: (options, handler) {
               final token = TokenStorage.getToken();
 
-              if (token != null && token.isNotEmpty) {
+              if (!_isPublicAuthRequest(options.path) &&
+                  token != null &&
+                  token.isNotEmpty) {
                 options.headers['Authorization'] = 'Bearer $token';
+              } else {
+                options.headers.remove('Authorization');
               }
 
               options.extra['requestStartedAt'] = DateTime.now();
@@ -47,7 +54,7 @@ class DioClient {
 
               return handler.next(response);
             },
-            onError: (DioException error, handler) {
+            onError: (DioException error, handler) async {
               final startedAt = error.requestOptions.extra['requestStartedAt'];
               final durationMs = startedAt is DateTime
                   ? DateTime.now().difference(startedAt).inMilliseconds
@@ -61,8 +68,39 @@ class DioClient {
                 'durationMs=${durationMs ?? 'unknown'}',
               );
 
+              if (error.response?.statusCode == 401 &&
+                  !_isPublicAuthRequest(error.requestOptions.path)) {
+                await _expireLocalSession();
+              }
+
               return handler.next(error);
             },
           ),
         );
+
+  static bool _isPublicAuthRequest(String path) {
+    final normalizedPath = path.trim().toLowerCase();
+
+    return <String>{
+      ApiConstants.login.toLowerCase(),
+      ApiConstants.register.toLowerCase(),
+      ApiConstants.sendOtp.toLowerCase(),
+      ApiConstants.verifyOtp.toLowerCase(),
+      ApiConstants.verifyRegister.toLowerCase(),
+      ApiConstants.forgotPassword.toLowerCase(),
+    }.contains(normalizedPath);
+  }
+
+  static Future<void> _expireLocalSession() async {
+    if (_isHandlingUnauthorized || !TokenStorage.isLoggedIn) return;
+
+    _isHandlingUnauthorized = true;
+
+    try {
+      await TokenStorage.clear();
+      await onUnauthorized?.call();
+    } finally {
+      _isHandlingUnauthorized = false;
+    }
+  }
 }

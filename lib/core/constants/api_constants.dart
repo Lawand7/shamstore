@@ -47,6 +47,8 @@ class ApiConstants {
 
   static const String deposit = '/deposit';
   static const String withdraw = '/withdraw';
+  static const String myTransactions = '/getMyTransactionByStatus';
+  static const String myBalance = '/getMyBalance';
 
   // =========================================================
   // Public Products
@@ -154,7 +156,6 @@ class ApiConstants {
     return '/orders/$orderId/reject';
   }
 
-
   static String shipOrder(int orderId) {
     return '/orders/$orderId/ship';
   }
@@ -197,6 +198,7 @@ class ApiConstants {
   }
 
   static const String myAds = '/getMyAdsByStatus';
+  static const String allApprovedAds = '/showAllAdvertisment';
 
   // =========================================================
   // Admin - Users

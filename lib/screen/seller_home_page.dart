@@ -7,7 +7,6 @@ import 'package:shamstore/features/notifications/controllers/notifications_contr
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/features/seller/controllers/seller_product_controller.dart';
 import 'package:shamstore/screen/enter_pin_screen.dart';
-import 'package:shamstore/screen/my_balanc_page.dart';
 import 'package:shamstore/screen/my_products_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/screen/profile_page.dart';
@@ -607,11 +606,6 @@ class _SellerHomePageState extends State<SellerHomePage> {
       (Icons.store_outlined, Icons.store, 'nav_store'),
       (Icons.inventory_2_outlined, Icons.inventory_2, 'manage_products'),
       (Icons.receipt_long_outlined, Icons.receipt_long, 'nav_orders'),
-      (
-        Icons.account_balance_wallet_outlined,
-        Icons.account_balance_wallet,
-        'nav_balance',
-      ),
       (Icons.settings_outlined, Icons.settings, 'nav_profile'),
     ];
     final Color activeColor = isDarkMode
@@ -649,12 +643,6 @@ class _SellerHomePageState extends State<SellerHomePage> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const SellerOrdersPage()),
-                  );
-                  if (mounted) await _refreshData();
-                } else if (index == 3) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyBalancePage()),
                   );
                   if (mounted) await _refreshData();
                 } else {

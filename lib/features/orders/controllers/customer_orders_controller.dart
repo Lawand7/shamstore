@@ -26,7 +26,7 @@ class CustomerOrdersController extends GetxController {
    *
    * confirm:12
    * report:12
-   * rating:5
+   * rating:12
    *
    * هذا يمنع تنفيذ نفس العملية أكثر من مرة
    * عند الضغط السريع على الزر.
@@ -158,11 +158,8 @@ class CustomerOrdersController extends GetxController {
     }
   }
 
-  Future<String?> rateSeller({
-    required int sellerId,
-    required int value,
-  }) async {
-    final String actionKey = _buildActionKey('rating', sellerId);
+  Future<String?> rateSeller({required int orderId, required int value}) async {
+    final String actionKey = _buildActionKey('rating', orderId);
 
     if (!_startAction(actionKey)) {
       return null;
@@ -172,11 +169,12 @@ class CustomerOrdersController extends GetxController {
 
     try {
       final String message = await _repository.rateSeller(
-        sellerId: sellerId,
+        orderId: orderId,
         value: value,
       );
 
       lastActionMessage.value = message;
+      await refreshOrders();
 
       return message;
     } catch (error) {
@@ -196,14 +194,14 @@ class CustomerOrdersController extends GetxController {
     return runningActions.contains(_buildActionKey('report', orderId));
   }
 
-  bool isRatingSeller(int sellerId) {
-    return runningActions.contains(_buildActionKey('rating', sellerId));
+  bool isRatingSeller(int orderId) {
+    return runningActions.contains(_buildActionKey('rating', orderId));
   }
 
   bool isAnyActionRunningForOrder(CustomerOrderModel order) {
     return isConfirming(order.id) ||
         isReporting(order.id) ||
-        isRatingSeller(order.sellerId);
+        isRatingSeller(order.id);
   }
 
   void clearActionMessages() {

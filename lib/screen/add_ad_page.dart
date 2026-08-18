@@ -20,7 +20,6 @@ class _AddAdPageState extends State<AddAdPage> {
       AdvertisementRepository();
 
   String? _selectedGovernorate;
-  bool _isPaid = false;
   bool _isSubmitting = false;
   final List<String> _governorates = [
     'دمشق',
@@ -76,7 +75,6 @@ class _AddAdPageState extends State<AddAdPage> {
         phoneNumber: _phoneController.text,
         description: _descriptionController.text,
         governorate: _governorateApiValue(_selectedGovernorate!),
-        amount: 100,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -297,82 +295,45 @@ class _AddAdPageState extends State<AddAdPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14.0),
                     decoration: BoxDecoration(
-                      color: _isPaid
-                          ? Colors.green.withOpacity(0.08)
-                          : (isDarkMode
-                                ? AppTheme.accentBlue.withOpacity(0.08)
-                                : AppTheme.primary.withOpacity(0.08)),
+                      color: isDarkMode
+                          ? AppTheme.accentBlue.withOpacity(0.08)
+                          : AppTheme.primary.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _isPaid
-                            ? Colors.green.withOpacity(0.3)
-                            : (isDarkMode
-                                  ? AppTheme.accentBlue.withOpacity(0.3)
-                                  : AppTheme.primary.withOpacity(0.2)),
+                        color: isDarkMode
+                            ? AppTheme.accentBlue.withOpacity(0.3)
+                            : AppTheme.primary.withOpacity(0.2),
                         width: 1,
                       ),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: isArabic
-                          ? [
-                              _buildPayButton(isDarkMode),
-                              Row(
-                                children: [
-                                  Text(
-                                    '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 ليرة سورية',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    _isPaid
-                                        ? Icons.check_circle_rounded
-                                        : Icons.payments_outlined,
-                                    color: _isPaid
-                                        ? Colors.green
-                                        : (isDarkMode
-                                              ? AppTheme.accentBlue
-                                              : AppTheme.primary),
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ]
-                          : [
-                              Row(
-                                children: [
-                                  Icon(
-                                    _isPaid
-                                        ? Icons.check_circle_rounded
-                                        : Icons.payments_outlined,
-                                    color: _isPaid
-                                        ? Colors.green
-                                        : (isDarkMode
-                                              ? AppTheme.accentBlue
-                                              : AppTheme.primary),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${AppLocalizations.of(context).translate("Ad Fee Required")} 100 SYP',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textDark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              _buildPayButton(isDarkMode),
-                            ],
+                      textDirection: isArabic
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
+                      children: [
+                        Icon(
+                          Icons.payments_outlined,
+                          color: isDarkMode
+                              ? AppTheme.accentBlue
+                              : AppTheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isArabic
+                                ? 'سيتم خصم 100 ليرة سورية من محفظتك عند إرسال الإعلان'
+                                : '100 SYP will be deducted from your wallet when the ad is submitted',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode
+                                  ? AppTheme.textPrimary
+                                  : AppTheme.textDark,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -382,7 +343,7 @@ class _AddAdPageState extends State<AddAdPage> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _isPaid && !_isSubmitting ? _submitAd : null,
+                    onPressed: _isSubmitting ? null : _submitAd,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode
                           ? AppTheme.selectedBorder
@@ -394,7 +355,7 @@ class _AddAdPageState extends State<AddAdPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      elevation: _isPaid ? 2 : 0,
+                      elevation: 2,
                     ),
                     child: _isSubmitting
                         ? const SizedBox(
@@ -406,9 +367,9 @@ class _AddAdPageState extends State<AddAdPage> {
                             ),
                           )
                         : Text(
-                            AppLocalizations.of(
-                              context,
-                            ).translate('Publish Ad Button'),
+                            isArabic
+                                ? 'دفع 100 ل.س وإرسال الإعلان'
+                                : 'Pay 100 SYP & submit ad',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -419,35 +380,6 @@ class _AddAdPageState extends State<AddAdPage> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPayButton(bool isDarkMode) {
-    return InkWell(
-      onTap: _isPaid
-          ? null
-          : () {
-              setState(() {
-                _isPaid = true;
-              });
-            },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: _isPaid
-              ? Colors.green
-              : (isDarkMode ? AppTheme.selectedBorder : AppTheme.primary),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          _isPaid ? 'تم الدفع ✓' : 'دفع',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
           ),
         ),
       ),
