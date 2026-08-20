@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/auth/controllers/change_password_controller.dart';
 import 'package:shamstore/screen/forgot_password_screen.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -51,11 +52,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (newPassword != confirmPassword) {
-      Get.snackbar(
-        'تنبيه',
-        'كلمة المرور الجديدة وتأكيدها غير متطابقين',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'كلمة المرور الجديدة وتأكيدها غير متطابقين');
       return;
     }
 
@@ -68,21 +65,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل تغيير كلمة المرور',
+      AppFeedback.error(
+        context,
         _changePasswordController.errorMessage.value.isNotEmpty
             ? _changePasswordController.errorMessage.value
             : 'حدث خطأ أثناء تغيير كلمة المرور',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم تغيير كلمة المرور بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'message_password_changed');
 
     Navigator.pop(context);
   }
@@ -306,11 +298,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             final password = value?.trim() ?? '';
 
             if (password.isEmpty) {
-              return 'هذا الحقل مطلوب';
+              return Localizations.localeOf(context).languageCode == 'ar'
+                  ? 'هذا الحقل مطلوب'
+                  : 'This field is required';
             }
 
             if (password.length < 8) {
-              return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+              return Localizations.localeOf(context).languageCode == 'ar'
+                  ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+                  : 'Password must be at least 8 characters';
             }
 
             return null;

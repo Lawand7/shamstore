@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:shamstore/features/auth/controllers/change_pin_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 
 class ChangeWalletPinPage extends StatefulWidget {
   const ChangeWalletPinPage({super.key});
@@ -50,11 +51,7 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
     final confirmPin = _confirmPinController.text.trim();
 
     if (newPin != confirmPin) {
-      Get.snackbar(
-        'تنبيه',
-        'رمز PIN الجديد وتأكيده غير متطابقين',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'رمز PIN الجديد وتأكيده غير متطابقين');
       return;
     }
 
@@ -66,21 +63,16 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل تغيير رمز PIN',
+      AppFeedback.error(
+        context,
         _changePinController.errorMessage.value.isNotEmpty
             ? _changePinController.errorMessage.value
             : 'حدث خطأ أثناء تغيير رمز PIN',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم تغيير رمز المحفظة PIN بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'message_pin_changed');
 
     Navigator.pop(context);
   }
@@ -89,12 +81,14 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
-    final Color activePrimary =
-        isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
+    final Color activePrimary = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
 
     return Scaffold(
-      backgroundColor:
-          isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
@@ -146,11 +140,14 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                 const SizedBox(height: 18),
 
                 Text(
-                  'أدخل كلمة مرور حسابك ثم اختر رمز PIN جديد للمحفظة.',
+                  isArabic
+                      ? 'أدخل كلمة مرور حسابك ثم اختر رمز PIN جديد للمحفظة.'
+                      : 'Enter your account password, then choose a new wallet PIN.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color:
-                        isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
+                    color: isDarkMode
+                        ? AppTheme.textSecondary
+                        : AppTheme.textGrey,
                     fontSize: 14,
                     height: 1.5,
                   ),
@@ -160,8 +157,10 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
 
                 _buildPasswordField(
                   controller: _passwordController,
-                  label: 'كلمة مرور الحساب',
-                  hint: 'أدخل كلمة مرور الحساب',
+                  label: isArabic ? 'كلمة مرور الحساب' : 'Account password',
+                  hint: isArabic
+                      ? 'أدخل كلمة مرور الحساب'
+                      : 'Enter account password',
                   isObscure: _obscurePassword,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -171,11 +170,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final password = value?.trim() ?? '';
 
                     if (password.isEmpty) {
-                      return 'كلمة مرور الحساب مطلوبة';
+                      return isArabic
+                          ? 'كلمة مرور الحساب مطلوبة'
+                          : 'Account password is required';
                     }
 
                     if (password.length < 8) {
-                      return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+                      return isArabic
+                          ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+                          : 'Password must be at least 8 characters';
                     }
 
                     return null;
@@ -189,8 +192,8 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
 
                 _buildPasswordField(
                   controller: _newPinController,
-                  label: 'رمز PIN الجديد',
-                  hint: 'أدخل 4 أرقام',
+                  label: isArabic ? 'رمز PIN الجديد' : 'New PIN',
+                  hint: isArabic ? 'أدخل 4 أرقام' : 'Enter 4 digits',
                   isObscure: _obscureNewPin,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -203,11 +206,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final pin = value?.trim() ?? '';
 
                     if (pin.isEmpty) {
-                      return 'رمز PIN الجديد مطلوب';
+                      return isArabic
+                          ? 'رمز PIN الجديد مطلوب'
+                          : 'New PIN is required';
                     }
 
                     if (pin.length != 4) {
-                      return 'رمز PIN يجب أن يكون 4 أرقام';
+                      return isArabic
+                          ? 'رمز PIN يجب أن يكون 4 أرقام'
+                          : 'PIN must be 4 digits';
                     }
 
                     return null;
@@ -221,8 +228,8 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
 
                 _buildPasswordField(
                   controller: _confirmPinController,
-                  label: 'تأكيد رمز PIN الجديد',
-                  hint: 'أعد إدخال 4 أرقام',
+                  label: isArabic ? 'تأكيد رمز PIN الجديد' : 'Confirm new PIN',
+                  hint: isArabic ? 'أعد إدخال 4 أرقام' : 'Re-enter 4 digits',
                   isObscure: _obscureConfirmPin,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -235,11 +242,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final pin = value?.trim() ?? '';
 
                     if (pin.isEmpty) {
-                      return 'تأكيد رمز PIN مطلوب';
+                      return isArabic
+                          ? 'تأكيد رمز PIN مطلوب'
+                          : 'PIN confirmation is required';
                     }
 
                     if (pin.length != 4) {
-                      return 'تأكيد رمز PIN يجب أن يكون 4 أرقام';
+                      return isArabic
+                          ? 'تأكيد رمز PIN يجب أن يكون 4 أرقام'
+                          : 'PIN confirmation must be 4 digits';
                     }
 
                     return null;
@@ -371,10 +382,7 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: activePrimary,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: activePrimary, width: 1.5),
             ),
           ),
         ),

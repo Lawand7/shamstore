@@ -12,19 +12,21 @@ class SecuritySettingsPage extends StatelessWidget {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    final Color activePrimary =
-        isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
+    final Color activePrimary = isDarkMode
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
 
     return Scaffold(
-      backgroundColor:
-          isDarkMode ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor: isDarkMode
+          ? AppTheme.darkBackground
+          : AppTheme.background,
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'إعدادات الأمان',
-          style: TextStyle(
+        title: Text(
+          isArabic ? 'إعدادات الأمان' : 'Security Settings',
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -70,7 +72,9 @@ class SecuritySettingsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'إدارة إعدادات حماية الحساب والمحفظة',
+                      isArabic
+                          ? 'إدارة إعدادات حماية الحساب والمحفظة'
+                          : 'Manage account and wallet security settings',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isDarkMode
@@ -89,8 +93,10 @@ class SecuritySettingsPage extends StatelessWidget {
                 isDarkMode: isDarkMode,
                 activePrimary: activePrimary,
                 icon: Icons.lock_reset_rounded,
-                title: 'تغيير كلمة المرور',
-                subtitle: 'تحديث كلمة مرور تسجيل الدخول إلى الحساب',
+                title: isArabic ? 'تغيير كلمة المرور' : 'Change Password',
+                subtitle: isArabic
+                    ? 'تحديث كلمة مرور تسجيل الدخول إلى الحساب'
+                    : 'Update your account sign-in password',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -106,8 +112,10 @@ class SecuritySettingsPage extends StatelessWidget {
                 isDarkMode: isDarkMode,
                 activePrimary: activePrimary,
                 icon: Icons.pin_rounded,
-                title: 'تغيير رمز المحفظة PIN',
-                subtitle: 'تحديث رمز PIN المستخدم في عمليات المحفظة',
+                title: isArabic ? 'تغيير رمز المحفظة PIN' : 'Change Wallet PIN',
+                subtitle: isArabic
+                    ? 'تحديث رمز PIN المستخدم في عمليات المحفظة'
+                    : 'Update the PIN used for wallet transactions',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -161,11 +169,7 @@ class SecuritySettingsPage extends StatelessWidget {
                 color: activePrimary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                icon,
-                color: activePrimary,
-                size: 24,
-              ),
+              child: Icon(icon, color: activePrimary, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -175,8 +179,9 @@ class SecuritySettingsPage extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color:
-                          isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),

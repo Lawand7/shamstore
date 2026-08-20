@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/products/repositories/product_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class ProductDetailsPage extends StatelessWidget {
@@ -175,6 +176,7 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
+                  context: context,
                   isArabic: isArabic,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -276,13 +278,7 @@ class ProductDetailsPage extends StatelessWidget {
     required int productId,
   }) async {
     if (productId <= 0) {
-      Get.snackbar(
-        'خطأ',
-        'معرّف المنتج غير صالح',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      AppFeedback.error(context, 'معرّف المنتج غير صالح');
       return;
     }
 
@@ -294,26 +290,16 @@ class ProductDetailsPage extends StatelessWidget {
     if (!context.mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل الإضافة',
+      AppFeedback.error(
+        context,
         customerController.addCartItemErrorMessage.value.isNotEmpty
             ? customerController.addCartItemErrorMessage.value
             : 'حدث خطأ أثناء إضافة المنتج إلى السلة',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تمت إضافة المنتج إلى السلة',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    AppFeedback.success(context, 'تمت إضافة المنتج إلى السلة');
   }
 
   Future<void> _showProductReportSheet({
@@ -322,13 +308,7 @@ class ProductDetailsPage extends StatelessWidget {
     required bool isDarkMode,
   }) async {
     if (productId <= 0) {
-      Get.snackbar(
-        'فشل الإبلاغ',
-        'تعذر تحديد المنتج',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      AppFeedback.error(context, 'تعذر تحديد المنتج');
       return;
     }
 
@@ -433,12 +413,9 @@ class ProductDetailsPage extends StatelessWidget {
                               final description = reportController.text.trim();
 
                               if (description.isEmpty) {
-                                Get.snackbar(
-                                  'فشل الإبلاغ',
+                                AppFeedback.error(
+                                  sheetContext,
                                   'يرجى كتابة تفاصيل المشكلة',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  colorText: Colors.white,
                                 );
                                 return;
                               }
@@ -455,26 +432,17 @@ class ProductDetailsPage extends StatelessWidget {
                                 if (!sheetContext.mounted) return;
 
                                 Navigator.of(sheetContext).pop();
-                                Get.snackbar(
-                                  'تم الإرسال',
-                                  message,
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.green,
-                                  colorText: Colors.white,
-                                );
+                                AppFeedback.success(context, message);
                               } catch (error) {
                                 if (!sheetContext.mounted) return;
 
                                 setModalState(() => isSending = false);
-                                Get.snackbar(
-                                  'فشل الإبلاغ',
+                                AppFeedback.error(
+                                  context,
                                   error.toString().replaceFirst(
                                     'Exception: ',
                                     '',
                                   ),
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  colorText: Colors.white,
                                 );
                               }
                             },
@@ -776,6 +744,7 @@ class ProductDetailsPage extends StatelessWidget {
   }
 
   Widget _buildInfoRow({
+    required BuildContext context,
     required bool isArabic,
     required bool isDarkMode,
     required Color activePrimary,
@@ -786,7 +755,7 @@ class ProductDetailsPage extends StatelessWidget {
 
     final quantityWidget = _smallInfoChip(
       icon: Icons.inventory_2_outlined,
-      label: 'الكمية',
+      label: AppLocalizations.of(context).translate('Quantity'),
       value: quantity,
       isArabic: isArabic,
       isDarkMode: isDarkMode,

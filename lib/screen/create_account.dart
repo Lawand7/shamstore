@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shamstore/features/auth/controllers/register_controller.dart';
 import 'package:shamstore/screen/otp_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -34,7 +35,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   final _dobController = TextEditingController();
@@ -128,7 +128,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     _dobController.dispose();
@@ -535,17 +534,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           const SizedBox(height: 14),
           _buildDateField(isDarkMode),
           const SizedBox(height: 14),
-          _buildField(
-            label: AppLocalizations.of(context).translate('Phone Number'),
-            hint: AppLocalizations.of(
-              context,
-            ).translate('Enter your phone number'),
-            icon: Icons.phone_outlined,
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            isDarkMode: isDarkMode,
-          ),
-          const SizedBox(height: 14),
           _buildGovernorateDropdown(isDarkMode),
           const SizedBox(height: 14),
           _buildField(
@@ -768,7 +756,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmController.text.trim();
     final dateOfBirth = _dobController.text.trim();
@@ -778,62 +765,37 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (firstName.isEmpty ||
         lastName.isEmpty ||
         email.isEmpty ||
-        phone.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty ||
         dateOfBirth.isEmpty ||
         governorate == null ||
         walletPin.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى تعبئة جميع الحقول المطلوبة',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى تعبئة جميع الحقول المطلوبة');
       return;
     }
 
     if (!email.contains('@') || !email.contains('.')) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال بريد إلكتروني صحيح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال بريد إلكتروني صحيح');
       return;
     }
 
     if (_profileImage == null) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى اختيار صورة الملف الشخصي',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى اختيار صورة الملف الشخصي');
       return;
     }
 
     if (_selectedRole == 'seller' && _identityImage == null) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى اختيار صورة الهوية للبائع',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى اختيار صورة الهوية للبائع');
       return;
     }
 
     if (password != confirmPassword) {
-      Get.snackbar(
-        'تنبيه',
-        'كلمة المرور وتأكيد كلمة المرور غير متطابقين',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'كلمة المرور وتأكيد كلمة المرور غير متطابقين');
       return;
     }
 
     if (walletPin.length != 4) {
-      Get.snackbar(
-        'تنبيه',
-        'رمز المحفظة يجب أن يكون 4 أرقام',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'رمز المحفظة يجب أن يكون 4 أرقام');
       return;
     }
 
@@ -856,20 +818,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل إنشاء الحساب',
+      AppFeedback.error(
+        context,
         _registerController.errorMessage.value.isNotEmpty
             ? _registerController.errorMessage.value
             : 'حدث خطأ أثناء إنشاء الحساب',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'تم إرسال رمز التحقق',
+    AppFeedback.success(
+      context,
       'يرجى إدخال الرمز المرسل إلى البريد الإلكتروني',
-      snackPosition: SnackPosition.BOTTOM,
     );
 
     Navigator.push(

@@ -12,6 +12,7 @@ import 'package:shamstore/screen/login_page.dart';
 import 'package:shamstore/screen/about_app_page.dart';
 import 'package:shamstore/screen/settings_page.dart';
 import 'package:shamstore/screen/my_ads_page.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/screen/support_page.dart';
 import 'package:shamstore/screen/security_settings_page.dart';
@@ -42,7 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String get _email {
     final email = TokenStorage.getUserEmail();
     if (email == null || email.trim().isEmpty) {
-      return 'غير متوفر';
+      return AppLocalizations.of(context).translate('not_available');
     }
     return email;
   }
@@ -123,12 +124,11 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (!localLogoutDone) {
-      Get.snackbar(
-        'فشل تسجيل الخروج',
+      AppFeedback.error(
+        context,
         _logoutController.errorMessage.value.isNotEmpty
             ? _logoutController.errorMessage.value
             : 'تعذر حذف بيانات الجلسة من الجهاز',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }

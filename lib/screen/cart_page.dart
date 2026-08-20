@@ -8,7 +8,9 @@ import 'package:shamstore/screen/checkout_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -118,25 +120,11 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم حذف المنتج من السلة',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    AppFeedback.success(context, 'تم حذف المنتج من السلة');
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'فشل العملية',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    AppFeedback.error(context, message);
   }
 
   Future<void> _openCheckout(CustomerCartItem item) async {
@@ -144,9 +132,7 @@ class _CartPageState extends State<CartPage> {
     final int availableQuantity = _availableQuantity(item);
 
     if (product == null) {
-      _showError(
-        'تعذر قراءة بيانات المنتج. حدّث السلة ثم أعد المحاولة',
-      );
+      _showError('تعذر قراءة بيانات المنتج. حدّث السلة ثم أعد المحاولة');
       return;
     }
 
@@ -170,9 +156,7 @@ class _CartPageState extends State<CartPage> {
     final bool? orderCreated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => CheckoutPage(
-          item: _cartItemToCheckoutMap(item),
-        ),
+        builder: (_) => CheckoutPage(item: _cartItemToCheckoutMap(item)),
       ),
     );
 
@@ -436,11 +420,11 @@ class _CartPageState extends State<CartPage> {
 
     final String productName = product?.title.trim().isNotEmpty == true
         ? product!.title
-        : 'منتج غير معروف';
+        : AppLocalizations.of(context).translate('unknown_product');
 
     final String city = product?.governorate.trim().isNotEmpty == true
-        ? product!.governorate
-        : 'غير متوفر';
+        ? LocalizedContent.value(context, product!.governorate)
+        : AppLocalizations.of(context).translate('not_available');
 
     final double unitPrice = _getUnitPrice(item);
     final int availableQuantity = _availableQuantity(item);
@@ -560,9 +544,7 @@ class _CartPageState extends State<CartPage> {
                             ? Icons.payment_outlined
                             : Icons.block_rounded,
                         size: 13,
-                        color: canPurchase
-                            ? activeColor
-                            : AppTheme.textLight,
+                        color: canPurchase ? activeColor : AppTheme.textLight,
                       ),
                       const SizedBox(width: 3),
                       Text(
@@ -571,9 +553,7 @@ class _CartPageState extends State<CartPage> {
                             : 'غير متاح',
                         style: TextStyle(
                           fontSize: 10,
-                          color: canPurchase
-                              ? activeColor
-                              : AppTheme.textLight,
+                          color: canPurchase ? activeColor : AppTheme.textLight,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -687,9 +667,7 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  outOfStock
-                      ? 'نفد المخزون'
-                      : 'المتوفر: $availableQuantity',
+                  outOfStock ? 'نفد المخزون' : 'المتوفر: $availableQuantity',
                   style: TextStyle(
                     fontSize: 10,
                     color: outOfStock
@@ -697,9 +675,7 @@ class _CartPageState extends State<CartPage> {
                         : (isDarkMode
                               ? AppTheme.textSecondary
                               : AppTheme.textGrey),
-                    fontWeight: outOfStock
-                        ? FontWeight.w700
-                        : FontWeight.w500,
+                    fontWeight: outOfStock ? FontWeight.w700 : FontWeight.w500,
                   ),
                   textAlign: _isArabic ? TextAlign.right : TextAlign.left,
                 ),
@@ -761,9 +737,7 @@ class _CartPageState extends State<CartPage> {
                 Icons.add,
                 size: 14,
                 color: reachedAvailableQuantity
-                    ? (isDarkMode
-                          ? AppTheme.textSecondary
-                          : AppTheme.textLight)
+                    ? (isDarkMode ? AppTheme.textSecondary : AppTheme.textLight)
                     : activeColor,
               ),
             ),
@@ -888,14 +862,14 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         children: [
           _summaryRow(
-            label: 'المجموع',
+            label: AppLocalizations.of(context).translate('Total'),
             value:
                 '${_formatPrice(_subtotal)} ${AppLocalizations.of(context).translate('SYP')}',
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 6),
           _summaryRow(
-            label: 'رسوم التوصيل',
+            label: AppLocalizations.of(context).translate('Delivery Fee'),
             value:
                 '${_formatPrice(_deliveryFee)} ${AppLocalizations.of(context).translate('SYP')}',
             isDarkMode: isDarkMode,

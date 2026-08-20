@@ -8,6 +8,8 @@ import 'package:shamstore/core/constants/api_constants.dart';
 import 'package:shamstore/features/seller/controllers/seller_orders_controller.dart';
 import 'package:shamstore/features/seller/models/seller_order_model.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class SellerOrdersPage extends StatefulWidget {
   const SellerOrdersPage({super.key});
@@ -139,7 +141,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
           children: [
             Expanded(
               child: _buildTabButton(
-                title: 'قيد التنفيذ',
+                title: _text('قيد التنفيذ', 'In progress'),
                 icon: Icons.pending_actions_rounded,
                 status: 'pending',
                 selectedStatus: selectedStatus,
@@ -150,7 +152,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             const SizedBox(width: 6),
             Expanded(
               child: _buildTabButton(
-                title: 'مكتملة',
+                title: _text('مكتملة', 'Completed'),
                 icon: Icons.task_alt_rounded,
                 status: 'complete',
                 selectedStatus: selectedStatus,
@@ -248,7 +250,11 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             ),
             const SizedBox(height: 18),
             Text(
-              _controller.errorMessage.value,
+              LocalizedContent.message(
+                context,
+                _controller.errorMessage.value,
+                isError: true,
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
@@ -262,7 +268,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
               child: FilledButton.icon(
                 onPressed: _controller.refreshOrders,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('إعادة المحاولة'),
+                label: Text(_text('إعادة المحاولة', 'Try again')),
                 style: FilledButton.styleFrom(backgroundColor: primaryColor),
               ),
             ),
@@ -442,8 +448,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     ], fallback: 'pending').toLowerCase();
 
     final bool isPending = status == 'pending';
-    final bool isCompleted =
-        status == 'complete' || status == 'completed';
+    final bool isCompleted = status == 'complete' || status == 'completed';
 
     final String productImage = _normalizeImageUrl(
       _firstText([
@@ -475,11 +480,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     final bool hasShippingInformation =
         shippingPeriod.isNotEmpty || shippingImage.isNotEmpty;
 
-    final bool isWaitingForSeller =
-        isPending && !hasShippingInformation;
+    final bool isWaitingForSeller = isPending && !hasShippingInformation;
 
-    final bool isShipped =
-        isPending && hasShippingInformation;
+    final bool isShipped = isPending && hasShippingInformation;
 
     final bool rejecting = _controller.isRejecting(orderId: order.id);
 
@@ -648,7 +651,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                   const SizedBox(height: 13),
                   _buildInfoRow(
                     icon: Icons.person_outline_rounded,
-                    title: 'العميل',
+                    title: _text('العميل', 'Customer'),
                     value: customerName,
                     isDarkMode: isDarkMode,
                   ),
@@ -656,7 +659,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.phone_outlined,
-                      title: 'الهاتف',
+                      title: _text('الهاتف', 'Phone'),
                       value: phone,
                       isDarkMode: isDarkMode,
                     ),
@@ -665,9 +668,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.location_on_outlined,
-                      title: 'العنوان',
+                      title: _text('العنوان', 'Address'),
                       value: [
-                        governorate,
+                        LocalizedContent.value(context, governorate),
                         address,
                       ].where((value) => value.isNotEmpty).join(' - '),
                       isDarkMode: isDarkMode,
@@ -677,7 +680,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.calendar_today_outlined,
-                      title: 'تاريخ الطلب',
+                      title: _text('تاريخ الطلب', 'Order date'),
                       value: createdAt,
                       isDarkMode: isDarkMode,
                     ),
@@ -703,7 +706,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                       const SizedBox(height: 9),
                       _buildInfoRow(
                         icon: Icons.local_shipping_outlined,
-                        title: 'التاريخ المتوقع',
+                        title: _text('التاريخ المتوقع', 'Expected date'),
                         value: _formatDate(shippingPeriod),
                         isDarkMode: isDarkMode,
                       ),
@@ -968,7 +971,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('إلغاء'),
+                child: Text(_text('إلغاء', 'Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
@@ -976,7 +979,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                   backgroundColor: AppTheme.error,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('تأكيد الرفض'),
+                child: Text(_text('تأكيد الرفض', 'Confirm rejection')),
               ),
             ],
           ),
@@ -1489,41 +1492,11 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     required String message,
     required bool isError,
   }) {
-    final String cleanMessage = message.trim().isEmpty
-        ? isError
-              ? 'حدث خطأ غير متوقع'
-              : 'تمت العملية بنجاح'
-        : message.trim();
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? AppTheme.error : AppTheme.success,
-          content: Row(
-            children: [
-              Icon(
-                isError
-                    ? Icons.error_outline_rounded
-                    : Icons.check_circle_outline_rounded,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '$title\n$cleanMessage',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   Map<String, dynamic> _nestedMap(
@@ -1667,5 +1640,11 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
         .replaceFirst(RegExp(r'^storage/'), '');
 
     return '$serverBase/storage/$cleanPath';
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 }

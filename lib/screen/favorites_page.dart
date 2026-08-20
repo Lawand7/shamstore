@@ -5,6 +5,9 @@ import 'package:shamstore/features/customer/controllers/customer_controller.dart
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
+import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class FavoritesPage extends StatefulWidget {
   final List<Map<String, dynamic>> allProducts;
@@ -195,14 +198,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   Map<String, dynamic> _productToMap(ProductModel product) {
@@ -686,7 +686,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         if (!_isArabic) const SizedBox(width: 3),
         Expanded(
           child: Text(
-            product.governorate.isNotEmpty ? product.governorate : 'غير متوفر',
+            product.governorate.isNotEmpty
+                ? LocalizedContent.value(context, product.governorate)
+                : AppLocalizations.of(context).translate('not_available'),
             style: TextStyle(
               fontSize: 10,
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,

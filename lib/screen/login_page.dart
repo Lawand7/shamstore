@@ -7,6 +7,7 @@ import 'package:shamstore/screen/create_account.dart';
 import 'package:shamstore/screen/home_page.dart';
 import 'package:shamstore/screen/seller_home_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/screen/forgot_password_screen.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
@@ -330,10 +331,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   final password = _passwordController.text.trim();
 
                   if (email.isEmpty || password.isEmpty) {
-                    Get.snackbar(
-                      'تنبيه',
+                    AppFeedback.error(
+                      context,
                       'يرجى إدخال البريد الإلكتروني وكلمة المرور',
-                      snackPosition: SnackPosition.BOTTOM,
                     );
                     return;
                   }
@@ -357,12 +357,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       (route) => false,
                     );
                   } else {
-                    Get.snackbar(
-                      'فشل تسجيل الدخول',
+                    AppFeedback.error(
+                      context,
                       _loginController.errorMessage.value.isNotEmpty
                           ? _loginController.errorMessage.value
                           : 'حدث خطأ أثناء تسجيل الدخول',
-                      snackPosition: SnackPosition.BOTTOM,
                     );
                   }
                 },

@@ -6,7 +6,9 @@ import 'package:shamstore/features/orders/controllers/customer_orders_controller
 import 'package:shamstore/features/orders/models/customer_order_model.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({super.key});
@@ -114,7 +116,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           children: [
             Expanded(
               child: _buildStatusButton(
-                label: 'المكتملة',
+                label: _text('المكتملة', 'Completed'),
                 status: 'complete',
                 isSelected: selectedStatus == 'complete',
                 isDarkMode: isDarkMode,
@@ -123,7 +125,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             const SizedBox(width: 6),
             Expanded(
               child: _buildStatusButton(
-                label: 'قيد التنفيذ',
+                label: _text('قيد التنفيذ', 'In progress'),
                 status: 'pending',
                 isSelected: selectedStatus == 'pending',
                 isDarkMode: isDarkMode,
@@ -258,8 +260,11 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 const SizedBox(height: 18),
                 Text(
                   isPending
-                      ? 'لا توجد طلبات قيد التنفيذ'
-                      : 'لا توجد طلبات مكتملة',
+                      ? _text(
+                          'لا توجد طلبات قيد التنفيذ',
+                          'No orders in progress',
+                        )
+                      : _text('لا توجد طلبات مكتملة', 'No completed orders'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -272,8 +277,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 const SizedBox(height: 8),
                 Text(
                   isPending
-                      ? 'ستظهر هنا الطلبات التي تنتظر تجهيز البائع أو أصبحت قيد التوصيل.'
-                      : 'ستظهر هنا الطلبات التي تم تأكيد استلامها.',
+                      ? _text(
+                          'ستظهر هنا الطلبات التي تنتظر تجهيز البائع أو أصبحت قيد التوصيل.',
+                          'Orders awaiting seller preparation or currently in delivery will appear here.',
+                        )
+                      : _text(
+                          'ستظهر هنا الطلبات التي تم تأكيد استلامها.',
+                          'Orders whose receipt has been confirmed will appear here.',
+                        ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -287,7 +298,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 TextButton.icon(
                   onPressed: _controller.refreshOrders,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('تحديث الطلبات'),
+                  label: Text(_text('تحديث الطلبات', 'Refresh orders')),
                 ),
               ],
             ),
@@ -312,7 +323,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 Icon(Icons.error_outline, size: 58, color: Colors.red.shade400),
                 const SizedBox(height: 16),
                 Text(
-                  'تعذر تحميل الطلبات',
+                  _text('تعذر تحميل الطلبات', 'Unable to load orders'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -323,7 +334,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  message,
+                  LocalizedContent.message(context, message, isError: true),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -337,7 +348,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 ElevatedButton.icon(
                   onPressed: _controller.refreshOrders,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('إعادة المحاولة'),
+                  label: Text(_text('إعادة المحاولة', 'Try again')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDarkMode
                         ? AppTheme.selectedBorder
@@ -360,7 +371,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
     final String location = order.address.isNotEmpty
         ? order.address
-        : order.governorate;
+        : LocalizedContent.value(context, order.governorate);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -473,13 +484,13 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
-            label: 'الكمية',
+            label: _text('الكمية', 'Quantity'),
             value: order.quantity.toString(),
             isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
-            label: 'الإجمالي',
+            label: _text('الإجمالي', 'Total'),
             value:
                 '${_formatPrice(order.totalPrice)} '
                 '${AppLocalizations.of(context).translate('SP')}',
@@ -489,7 +500,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           if (order.phone.isNotEmpty) ...[
             const SizedBox(height: 8),
             _buildInfoRow(
-              label: 'رقم الهاتف',
+              label: _text('رقم الهاتف', 'Phone number'),
               value: order.phone,
               isDarkMode: isDarkMode,
             ),
@@ -497,7 +508,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           if (order.isInDelivery && order.shippingPeriod.isNotEmpty) ...[
             const SizedBox(height: 8),
             _buildInfoRow(
-              label: 'مدة أو موعد التوصيل',
+              label: _text('مدة أو موعد التوصيل', 'Delivery time'),
               value: order.shippingPeriod,
               isDarkMode: isDarkMode,
             ),
@@ -527,10 +538,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     );
   }
 
-  Widget _buildShippingProof(
-    CustomerOrderModel order,
-    bool isDarkMode,
-  ) {
+  Widget _buildShippingProof(CustomerOrderModel order, bool isDarkMode) {
     final String imageUrl = _normalizeShippingImageUrl(order.shippingImage);
 
     final Color borderColor = isDarkMode
@@ -552,21 +560,15 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
-              'صورة إثبات الشحن',
+              _text('صورة إثبات الشحن', 'Shipping proof image'),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isDarkMode
-                    ? AppTheme.textPrimary
-                    : AppTheme.textDark,
+                color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               ),
             ),
             const SizedBox(width: 6),
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 17,
-              color: primaryColor,
-            ),
+            Icon(Icons.receipt_long_outlined, size: 17, color: primaryColor),
           ],
         ),
         const SizedBox(height: 8),
@@ -594,7 +596,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               child: imageUrl.isEmpty
                   ? Center(
                       child: Text(
-                        'مسار صورة الشحن غير صالح',
+                        _text(
+                          'مسار صورة الشحن غير صالح',
+                          'The shipping image path is invalid',
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDarkMode
@@ -609,60 +614,65 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                         Image.network(
                           imageUrl,
                           fit: BoxFit.cover,
-                          loadingBuilder: (
-                            BuildContext context,
-                            Widget child,
-                            ImageChunkEvent? loadingProgress,
-                          ) {
-                            if (loadingProgress == null) {
-                              return child;
-                            }
+                          loadingBuilder:
+                              (
+                                BuildContext context,
+                                Widget child,
+                                ImageChunkEvent? loadingProgress,
+                              ) {
+                                if (loadingProgress == null) {
+                                  return child;
+                                }
 
-                            return Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (
-                            BuildContext context,
-                            Object error,
-                            StackTrace? stackTrace,
-                          ) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 38,
-                                      color: isDarkMode
-                                          ? AppTheme.textSecondary
-                                          : AppTheme.textGrey,
+                                return Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: primaryColor,
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'تعذر تحميل صورة إثبات الشحن',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDarkMode
-                                            ? AppTheme.textSecondary
-                                            : AppTheme.textGrey,
-                                      ),
+                                  ),
+                                );
+                              },
+                          errorBuilder:
+                              (
+                                BuildContext context,
+                                Object error,
+                                StackTrace? stackTrace,
+                              ) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 38,
+                                          color: isDarkMode
+                                              ? AppTheme.textSecondary
+                                              : AppTheme.textGrey,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _text(
+                                            'تعذر تحميل صورة إثبات الشحن',
+                                            'Unable to load the shipping proof image',
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isDarkMode
+                                                ? AppTheme.textSecondary
+                                                : AppTheme.textGrey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                                  ),
+                                );
+                              },
                         ),
                         Positioned(
                           left: 8,
@@ -676,18 +686,18 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                               color: Colors.black.withValues(alpha: 0.65),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.zoom_in_rounded,
                                   color: Colors.white,
                                   size: 15,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'اضغط للتكبير',
-                                  style: TextStyle(
+                                  _text('اضغط للتكبير', 'Tap to enlarge'),
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -704,14 +714,15 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         ),
         const SizedBox(height: 7),
         Text(
-          'هذه الصورة أرسلها البائع كإثبات للشحن، ولا تعني وحدها أنك استلمت المنتج.',
+          _text(
+            'هذه الصورة أرسلها البائع كإثبات للشحن، ولا تعني وحدها أنك استلمت المنتج.',
+            'The seller provided this image as shipping proof. It does not confirm that you received the product.',
+          ),
           textAlign: TextAlign.right,
           style: TextStyle(
             fontSize: 10.5,
             height: 1.45,
-            color: isDarkMode
-                ? AppTheme.textSecondary
-                : AppTheme.textGrey,
+            color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
           ),
         ),
       ],
@@ -737,9 +748,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   maxHeight: MediaQuery.of(dialogContext).size.height * 0.82,
                 ),
                 decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? AppTheme.cardBackground
-                      : AppTheme.white,
+                  color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -750,45 +759,45 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                     imageUrl,
                     fit: BoxFit.contain,
                     width: double.infinity,
-                    loadingBuilder: (
-                      BuildContext context,
-                      Widget child,
-                      ImageChunkEvent? loadingProgress,
-                    ) {
-                      if (loadingProgress == null) {
-                        return child;
-                      }
+                    loadingBuilder:
+                        (
+                          BuildContext context,
+                          Widget child,
+                          ImageChunkEvent? loadingProgress,
+                        ) {
+                          if (loadingProgress == null) {
+                            return child;
+                          }
 
-                      return const SizedBox(
-                        height: 360,
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    },
-                    errorBuilder: (
-                      BuildContext context,
-                      Object error,
-                      StackTrace? stackTrace,
-                    ) {
-                      return SizedBox(
-                        height: 360,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              'تعذر فتح صورة إثبات الشحن',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? AppTheme.textPrimary
-                                    : AppTheme.textDark,
+                          return const SizedBox(
+                            height: 360,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                    errorBuilder:
+                        (
+                          BuildContext context,
+                          Object error,
+                          StackTrace? stackTrace,
+                        ) {
+                          return SizedBox(
+                            height: 360,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Text(
+                                  'تعذر فتح صورة إثبات الشحن',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isDarkMode
+                                        ? AppTheme.textPrimary
+                                        : AppTheme.textDark,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
                   ),
                 ),
               ),
@@ -801,10 +810,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   child: IconButton(
                     tooltip: 'إغلاق',
                     onPressed: () => Navigator.of(dialogContext).pop(),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
                   ),
                 ),
               ),
@@ -869,25 +875,22 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     );
   }
 
-  Widget _buildStatusBadge(
-    CustomerOrderModel order,
-    bool isDarkMode,
-  ) {
+  Widget _buildStatusBadge(CustomerOrderModel order, bool isDarkMode) {
     late final Color statusColor;
     late final String label;
     late final IconData icon;
 
     if (order.isCompleted) {
       statusColor = Colors.green;
-      label = 'مكتمل';
+      label = _text('مكتمل', 'Completed');
       icon = Icons.check_circle_outline;
     } else if (order.isInDelivery) {
       statusColor = isDarkMode ? AppTheme.accentBlue : AppTheme.primary;
-      label = 'قيد التوصيل';
+      label = _text('قيد التوصيل', 'In delivery');
       icon = Icons.local_shipping_outlined;
     } else {
       statusColor = Colors.orange;
-      label = 'بانتظار البائع';
+      label = _text('بانتظار البائع', 'Awaiting seller');
       icon = Icons.schedule_rounded;
     }
 
@@ -915,10 +918,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     );
   }
 
-  Widget _buildShippingStageNotice(
-    CustomerOrderModel order,
-    bool isDarkMode,
-  ) {
+  Widget _buildShippingStageNotice(CustomerOrderModel order, bool isDarkMode) {
     final bool isInDelivery = order.isInDelivery;
 
     final Color noticeColor = isInDelivery
@@ -926,8 +926,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         : Colors.orange;
 
     final String message = isInDelivery
-        ? 'أرسل البائع بيانات الشحن. أكد الاستلام فقط بعد وصول الطلب إليك فعلياً.'
-        : 'الطلب بانتظار البائع لتجهيزه وإرسال صورة الشحن ومدة التوصيل.';
+        ? _text(
+            'أرسل البائع بيانات الشحن. أكد الاستلام فقط بعد وصول الطلب إليك فعلياً.',
+            'The seller sent the shipping details. Confirm receipt only after the order actually arrives.',
+          )
+        : _text(
+            'الطلب بانتظار البائع لتجهيزه وإرسال صورة الشحن ومدة التوصيل.',
+            'The order is waiting for the seller to prepare it and provide shipping proof and a delivery time.',
+          );
 
     return Container(
       width: double.infinity,
@@ -935,9 +941,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       decoration: BoxDecoration(
         color: noticeColor.withValues(alpha: isDarkMode ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: noticeColor.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: noticeColor.withValues(alpha: 0.22)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,9 +953,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               style: TextStyle(
                 fontSize: 11.5,
                 height: 1.5,
-                color: isDarkMode
-                    ? AppTheme.textPrimary
-                    : AppTheme.textDark,
+                color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               ),
             ),
           ),
@@ -982,7 +984,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         runSpacing: 8,
         children: [
           _actionButton(
-            label: 'إبلاغ',
+            label: _text('إبلاغ', 'Report'),
             icon: Icons.flag_outlined,
             color: Colors.red,
             isLoading: isReporting,
@@ -994,7 +996,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           ),
           if (order.canRateSeller)
             _actionButton(
-              label: 'تقييم',
+              label: _text('تقييم', 'Rate'),
               icon: Icons.star_border,
               color: Colors.orange,
               isLoading: isRating,
@@ -1006,7 +1008,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             ),
           if (order.canConfirmDelivery)
             _actionButton(
-              label: 'تأكيد الاستلام',
+              label: _text('تأكيد الاستلام', 'Confirm receipt'),
               icon: Icons.check,
               color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
               isLoading: isConfirming,
@@ -1096,7 +1098,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             borderRadius: BorderRadius.circular(18),
           ),
           title: Text(
-            'تأكيد استلام الطلب',
+            _text('تأكيد استلام الطلب', 'Confirm order receipt'),
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 17,
@@ -1105,8 +1107,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             ),
           ),
           content: Text(
-            'هل استلمت الطلب رقم #${order.id} بالفعل؟\n\n'
-            'لا تؤكد قبل استلام المنتج وفحصه. بعد التأكيد سيتم تحويل قيمة الطلب إلى محفظة البائع.',
+            _text(
+              'هل استلمت الطلب رقم #${order.id} بالفعل؟\n\nلا تؤكد قبل استلام المنتج وفحصه. بعد التأكيد سيتم تحويل قيمة الطلب إلى محفظة البائع.',
+              'Have you received order #${order.id}?\n\nDo not confirm before receiving and inspecting the product. Once confirmed, the order amount will be transferred to the seller wallet.',
+            ),
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 13,
@@ -1119,7 +1123,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               onPressed: () {
                 Navigator.of(dialogContext).pop(false);
               },
-              child: const Text('إلغاء'),
+              child: Text(_text('إلغاء', 'Cancel')),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1131,7 +1135,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                     : AppTheme.primary,
                 foregroundColor: AppTheme.white,
               ),
-              child: const Text('تأكيد الاستلام'),
+              child: Text(_text('تأكيد الاستلام', 'Confirm receipt')),
             ),
           ],
         );
@@ -1242,9 +1246,9 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                           : AppTheme.textGrey,
                     ),
                   ),
-                  const Text(
-                    'الإبلاغ عن مشكلة',
-                    style: TextStyle(
+                  Text(
+                    _text('الإبلاغ عن مشكلة', 'Report a problem'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
@@ -1254,7 +1258,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                'الطلب #${order.id} - ${order.productName}',
+                _text(
+                  'الطلب #${order.id} - ${order.productName}',
+                  'Order #${order.id} - ${order.productName}',
+                ),
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   fontSize: 12,
@@ -1274,7 +1281,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'اكتب تفاصيل المشكلة بشكل واضح...',
+                  hintText: _text(
+                    'اكتب تفاصيل المشكلة بشكل واضح...',
+                    'Describe the problem clearly...',
+                  ),
                   filled: true,
                   fillColor: isDarkMode
                       ? AppTheme.inputFieldBg
@@ -1362,9 +1372,9 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                               ),
                             ),
                           )
-                        : const Text(
-                            'إرسال إلى الإدارة',
-                            style: TextStyle(
+                        : Text(
+                            _text('إرسال إلى الإدارة', 'Send report'),
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1405,7 +1415,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               title: Text(
-                'تقييم البائع',
+                _text('تقييم البائع', 'Rate seller'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -1450,7 +1460,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   ),
                   if (selectedRating > 0)
                     Text(
-                      '$selectedRating من 5',
+                      _text('$selectedRating من 5', '$selectedRating out of 5'),
                       style: TextStyle(
                         fontSize: 12,
                         color: isDarkMode
@@ -1466,12 +1476,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                   },
-                  child: const Text('إلغاء'),
+                  child: Text(_text('إلغاء', 'Cancel')),
                 ),
                 Obx(() {
-                  final bool isSending = _controller.isRatingSeller(
-                    order.id,
-                  );
+                  final bool isSending = _controller.isRatingSeller(order.id);
 
                   return ElevatedButton(
                     onPressed: isSending
@@ -1524,7 +1532,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                               ),
                             ),
                           )
-                        : const Text('إرسال التقييم'),
+                        : Text(_text('إرسال التقييم', 'Submit rating')),
                   );
                 }),
               ],
@@ -1540,15 +1548,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message, textAlign: TextAlign.right),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    AppFeedback.success(context, message);
   }
 
   void _showErrorMessage(String message) {
@@ -1556,15 +1556,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message, textAlign: TextAlign.right),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    AppFeedback.error(context, message);
   }
 
   String _formatPrice(double value) {
@@ -1573,5 +1565,11 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     }
 
     return value.toStringAsFixed(2);
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 }

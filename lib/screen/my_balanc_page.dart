@@ -5,6 +5,7 @@ import 'package:shamstore/features/seller/repositories/seller_orders_repository.
 import 'package:shamstore/features/wallet/controllers/wallet_controller.dart';
 import 'package:shamstore/features/wallet/models/wallet_transaction_model.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class MyBalancePage extends StatefulWidget {
@@ -160,12 +161,11 @@ class _MyBalancePageState extends State<MyBalancePage> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.error : AppTheme.success,
-      ),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   @override

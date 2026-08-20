@@ -137,9 +137,9 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'طلبات الدعم',
-          style: TextStyle(
+        title: Text(
+          _text('طلبات الدعم', 'Support Requests'),
+          style: const TextStyle(
             color: AppTheme.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -166,9 +166,13 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         children: [
-          _statusChip('pending', 'قيد المراجعة', isDarkMode),
+          _statusChip(
+            'pending',
+            _text('قيد المراجعة', 'Pending review'),
+            isDarkMode,
+          ),
           const SizedBox(width: 8),
-          _statusChip('answered', 'تمت الإجابة', isDarkMode),
+          _statusChip('answered', _text('تمت الإجابة', 'Answered'), isDarkMode),
         ],
       ),
     );
@@ -211,7 +215,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => _loadQuestions(refresh: true),
-                child: const Text('إعادة المحاولة'),
+                child: Text(_text('إعادة المحاولة', 'Try again')),
               ),
             ],
           ),
@@ -224,9 +228,16 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         onRefresh: () => _loadQuestions(refresh: true),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 220),
-            Center(child: Text('لا توجد طلبات دعم بهذه الحالة')),
+          children: [
+            const SizedBox(height: 220),
+            Center(
+              child: Text(
+                _text(
+                  'لا توجد طلبات دعم بهذه الحالة',
+                  'No support requests with this status',
+                ),
+              ),
+            ),
           ],
         ),
       );
@@ -285,7 +296,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                'إجابة الدعم',
+                _text('إجابة الدعم', 'Support response'),
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
@@ -306,15 +317,24 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               ),
             ] else ...[
               const SizedBox(height: 10),
-              const Text(
-                'بانتظار رد فريق الدعم',
+              Text(
+                _text(
+                  'بانتظار رد فريق الدعم',
+                  'Waiting for the support team response',
+                ),
                 textAlign: TextAlign.right,
-                style: TextStyle(color: Colors.orange, fontSize: 11),
+                style: const TextStyle(color: Colors.orange, fontSize: 11),
               ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 }

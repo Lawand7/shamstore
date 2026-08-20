@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/features/ads/repositories/advertisement_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class AllAdsPage extends StatefulWidget {
   const AllAdsPage({super.key});
@@ -294,7 +295,7 @@ class _AllAdsPageState extends State<AllAdsPage> {
               if (governorate.isNotEmpty)
                 _buildInfo(
                   icon: Icons.location_on_outlined,
-                  text: AppLocalizations.of(context).translate(governorate),
+                  text: LocalizedContent.value(context, governorate),
                   color: activeColor,
                   isDarkMode: isDarkMode,
                 ),

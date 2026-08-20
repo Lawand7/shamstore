@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:shamstore/features/seller/controllers/seller_product_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class UpdateProductPage extends StatefulWidget {
@@ -138,21 +139,14 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         _selectedImageFile = File(pickedImage.path);
       });
     } catch (_) {
-      Get.snackbar(
-        'خطأ',
-        'تعذر اختيار الصورة',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (!mounted) return;
+      AppFeedback.error(context, 'تعذر اختيار الصورة');
     }
   }
 
   Future<void> _submitUpdate() async {
     if (_productId <= 0) {
-      Get.snackbar(
-        'خطأ',
-        'معرّف المنتج غير صالح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'معرّف المنتج غير صالح');
       return;
     }
 
@@ -162,11 +156,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     final quantityText = _qtyController.text.trim();
 
     if (title.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال اسم المنتج',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال اسم المنتج');
       return;
     }
 
@@ -177,11 +167,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       price = double.tryParse(priceText);
 
       if (price == null || price < 0) {
-        Get.snackbar(
-          'تنبيه',
-          'السعر غير صالح',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        AppFeedback.error(context, 'السعر غير صالح');
         return;
       }
     }
@@ -190,11 +176,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       quantity = int.tryParse(quantityText);
 
       if (quantity == null || quantity < 0) {
-        Get.snackbar(
-          'تنبيه',
-          'الكمية غير صالحة',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        AppFeedback.error(context, 'الكمية غير صالحة');
         return;
       }
     }
@@ -213,21 +195,16 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل تعديل المنتج',
+      AppFeedback.error(
+        context,
         _sellerProductController.updateProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.updateProductErrorMessage.value
             : 'حدث خطأ أثناء تعديل المنتج',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم تعديل المنتج بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تم تعديل المنتج بنجاح');
 
     Navigator.pop(context, {
       'updated': true,

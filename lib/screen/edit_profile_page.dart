@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:shamstore/features/auth/controllers/update_profile_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String initialFirstName;
@@ -169,22 +171,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!mounted) return;
 
     if (result == null) {
-      Get.snackbar(
-        'فشل تحديث الملف الشخصي',
+      AppFeedback.error(
+        context,
         _updateProfileController.errorMessage.value.isNotEmpty
             ? _updateProfileController.errorMessage.value
-            : 'حدث خطأ أثناء تحديث الملف الشخصي',
-        snackPosition: SnackPosition.BOTTOM,
+            : _text(
+                'حدث خطأ أثناء تحديث الملف الشخصي',
+                'An error occurred while updating your profile.',
+              ),
       );
       return;
     }
 
     final profile = result['profile'];
 
-    Get.snackbar(
-      'نجاح',
-      result['message']?.toString() ?? 'تم تحديث الملف الشخصي بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
+    AppFeedback.success(
+      context,
+      result['message']?.toString() ?? 'message_profile_updated',
     );
 
     Navigator.pop(context, {
@@ -221,9 +224,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'تعديل الملف الشخصي',
-          style: TextStyle(
+        title: Text(
+          _text('تعديل الملف الشخصي', 'Edit Profile'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -252,15 +255,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
                 _buildTextField(
                   controller: _firstNameController,
-                  label: 'الاسم الأول',
-                  hint: 'أدخل الاسم الأول',
+                  label: _text('الاسم الأول', 'First name'),
+                  hint: _text('أدخل الاسم الأول', 'Enter first name'),
                   icon: Icons.person_outline,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
                   validator: (value) {
                     final text = value?.trim() ?? '';
-                    if (text.isEmpty) return 'الاسم الأول مطلوب';
-                    if (text.length > 255) return 'الاسم الأول طويل جداً';
+                    if (text.isEmpty) {
+                      return _text(
+                        'الاسم الأول مطلوب',
+                        'First name is required',
+                      );
+                    }
+                    if (text.length > 255) {
+                      return _text(
+                        'الاسم الأول طويل جداً',
+                        'First name is too long',
+                      );
+                    }
                     return null;
                   },
                 ),
@@ -269,15 +282,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
                 _buildTextField(
                   controller: _lastNameController,
-                  label: 'الاسم الأخير',
-                  hint: 'أدخل الاسم الأخير',
+                  label: _text('الاسم الأخير', 'Last name'),
+                  hint: _text('أدخل الاسم الأخير', 'Enter last name'),
                   icon: Icons.person_outline,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
                   validator: (value) {
                     final text = value?.trim() ?? '';
-                    if (text.isEmpty) return 'الاسم الأخير مطلوب';
-                    if (text.length > 255) return 'الاسم الأخير طويل جداً';
+                    if (text.isEmpty) {
+                      return _text(
+                        'الاسم الأخير مطلوب',
+                        'Last name is required',
+                      );
+                    }
+                    if (text.length > 255) {
+                      return _text(
+                        'الاسم الأخير طويل جداً',
+                        'Last name is too long',
+                      );
+                    }
                     return null;
                   },
                 ),
@@ -322,9 +345,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              'حفظ التغييرات',
-                              style: TextStyle(
+                          : Text(
+                              _text('حفظ التغييرات', 'Save changes'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -408,7 +431,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         const SizedBox(height: 10),
         Text(
-          'اضغط لاختيار صورة من المعرض',
+          _text(
+            'اضغط لاختيار صورة من المعرض',
+            'Tap to choose an image from the gallery',
+          ),
           style: TextStyle(
             color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
             fontSize: 13,
@@ -458,7 +484,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('تاريخ الميلاد', isDarkMode),
+        _fieldLabel(_text('تاريخ الميلاد', 'Date of birth'), isDarkMode),
         const SizedBox(height: 8),
         TextFormField(
           controller: _dateOfBirthController,
@@ -466,9 +492,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
           onTap: _selectDateOfBirth,
           validator: (value) {
             final text = value?.trim() ?? '';
-            if (text.isEmpty) return 'تاريخ الميلاد مطلوب';
+            if (text.isEmpty) {
+              return _text('تاريخ الميلاد مطلوب', 'Date of birth is required');
+            }
             if (DateTime.tryParse(text) == null) {
-              return 'صيغة تاريخ الميلاد غير صحيحة';
+              return _text(
+                'صيغة تاريخ الميلاد غير صحيحة',
+                'Invalid date of birth format',
+              );
             }
             return null;
           },
@@ -477,7 +508,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             fontSize: 14,
           ),
           decoration: _inputDecoration(
-            hint: 'اختر تاريخ الميلاد',
+            hint: _text('اختر تاريخ الميلاد', 'Select date of birth'),
             icon: Icons.calendar_today_outlined,
             isDarkMode: isDarkMode,
             activePrimary: activePrimary,
@@ -494,14 +525,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('المحافظة', isDarkMode),
+        _fieldLabel(_text('المحافظة', 'Governorate'), isDarkMode),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _selectedGovernorate,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'المحافظة مطلوبة';
+              return _text('المحافظة مطلوبة', 'Governorate is required');
             }
             return null;
           },
@@ -510,7 +541,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             fontSize: 14,
           ),
           decoration: _inputDecoration(
-            hint: 'اختر المحافظة',
+            hint: _text('اختر المحافظة', 'Select governorate'),
             icon: Icons.location_on_outlined,
             isDarkMode: isDarkMode,
             activePrimary: activePrimary,
@@ -518,7 +549,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           items: _governorates.map((governorate) {
             return DropdownMenuItem<String>(
               value: governorate,
-              child: Text(governorate),
+              child: Text(LocalizedContent.value(context, governorate)),
             );
           }).toList(),
           onChanged: (value) {
@@ -581,5 +612,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderSide: BorderSide(color: activePrimary, width: 1.5),
       ),
     );
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 }

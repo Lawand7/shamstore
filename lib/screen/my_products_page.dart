@@ -7,6 +7,7 @@ import 'package:shamstore/screen/add_product_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/screen/update_product_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class MyProductsPage extends StatefulWidget {
@@ -258,7 +259,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadCurrentTab,
-              child: const Text('إعادة المحاولة'),
+              child: Text(_isArabic() ? 'إعادة المحاولة' : 'Try again'),
             ),
           ],
         ),
@@ -693,11 +694,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
     required String title,
   }) async {
     if (productId <= 0) {
-      Get.snackbar(
-        'خطأ',
-        'معرّف المنتج غير صالح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'معرّف المنتج غير صالح');
       return;
     }
 
@@ -729,11 +726,11 @@ class _MyProductsPageState extends State<MyProductsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('إلغاء'),
+              child: Text(_isArabic() ? 'إلغاء' : 'Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('حذف'),
+              child: Text(_isArabic() ? 'حذف' : 'Delete'),
             ),
           ],
         );
@@ -753,21 +750,16 @@ class _MyProductsPageState extends State<MyProductsPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل الحذف',
+      AppFeedback.error(
+        context,
         _sellerProductController.deleteProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.deleteProductErrorMessage.value
             : 'حدث خطأ أثناء حذف المنتج',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم حذف المنتج بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تم حذف المنتج بنجاح');
 
     await _reloadAfterDataChange();
   }
@@ -777,11 +769,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
     required bool isPublished,
   }) async {
     if (productId <= 0) {
-      Get.snackbar(
-        'خطأ',
-        'معرّف المنتج غير صالح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'معرّف المنتج غير صالح');
       return;
     }
 
@@ -792,20 +780,18 @@ class _MyProductsPageState extends State<MyProductsPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل العملية',
+      AppFeedback.error(
+        context,
         _sellerProductController.productVisibilityErrorMessage.value.isNotEmpty
             ? _sellerProductController.productVisibilityErrorMessage.value
             : 'حدث خطأ أثناء تغيير حالة المنتج',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
+    AppFeedback.success(
+      context,
       isPublished ? 'تم إخفاء المنتج بنجاح' : 'تم نشر المنتج بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
     );
 
     await _reloadAfterDataChange();

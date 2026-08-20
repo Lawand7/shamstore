@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/core/storage/token_storage.dart';
 import 'package:shamstore/features/auth/controllers/otp_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/screen/home_page.dart';
 import 'package:shamstore/screen/seller_home_page.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -74,11 +75,7 @@ class _OtpScreenState extends State<OtpScreen> {
     _startTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.snackbar(
-        'رمز التحقق',
-        'تم إرسال رمز التحقق إلى البريد الإلكتروني',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.success(context, 'تم إرسال رمز التحقق إلى البريد الإلكتروني');
     });
   }
 
@@ -105,18 +102,13 @@ class _OtpScreenState extends State<OtpScreen> {
       setState(() => _seconds = 60);
       _startTimer();
 
-      Get.snackbar(
-        'تم الإرسال',
-        'تم إرسال رمز جديد إلى البريد الإلكتروني',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.success(context, 'تم إرسال رمز جديد إلى البريد الإلكتروني');
     } else {
-      Get.snackbar(
-        'فشل إرسال الرمز',
+      AppFeedback.error(
+        context,
         _otpController.errorMessage.value.isNotEmpty
             ? _otpController.errorMessage.value
             : 'حدث خطأ أثناء إعادة إرسال الرمز',
-        snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
@@ -178,11 +170,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final otp = _getOtpCode();
 
     if (otp.length != 6) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال رمز التحقق المكون من 6 أرقام',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال رمز التحقق المكون من 6 أرقام');
       return;
     }
 
@@ -191,12 +179,11 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل التحقق',
+      AppFeedback.error(
+        context,
         _otpController.errorMessage.value.isNotEmpty
             ? _otpController.errorMessage.value
             : 'رمز التحقق غير صحيح',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
@@ -206,10 +193,9 @@ class _OtpScreenState extends State<OtpScreen> {
     final token = response?['token']?.toString().trim();
 
     if (token == null || token.isEmpty) {
-      Get.snackbar(
-        'خطأ',
+      AppFeedback.error(
+        context,
         'تم التحقق من الحساب لكن لم يتم إرجاع التوكن من السيرفر',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
@@ -292,11 +278,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (!mounted) return;
 
-    Get.snackbar(
-      'نجاح',
-      'تم التحقق من الحساب بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تم التحقق من الحساب بنجاح');
 
     if (!mounted) return;
 

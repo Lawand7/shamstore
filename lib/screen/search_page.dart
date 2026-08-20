@@ -9,7 +9,9 @@ import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/category_products.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -29,12 +31,12 @@ class _SearchPageState extends State<SearchPage> {
   String _searchQuery = '';
   double? _minPrice;
   double? _maxPrice;
-  String _selectedGovernorate = 'الكل';
+  String _selectedGovernorate = 'all';
   int? _selectedFilterCategoryId;
   bool _isFilterMode = false;
 
   final List<String> _governorates = [
-    'الكل',
+    'all',
     'Damascus',
     'Aleppo',
     'Homs',
@@ -370,13 +372,7 @@ class _SearchPageState extends State<SearchPage> {
                         return DropdownMenuItem(
                           value: governorate,
                           child: Text(
-                            governorate == 'الكل'
-                                ? AppLocalizations.of(
-                                    context,
-                                  ).translate('All Tab')
-                                : AppLocalizations.of(
-                                    context,
-                                  ).translate(governorate),
+                            LocalizedContent.value(context, governorate),
                           ),
                         );
                       }).toList(),
@@ -398,7 +394,7 @@ class _SearchPageState extends State<SearchPage> {
                               setState(() {
                                 _minPrice = null;
                                 _maxPrice = null;
-                                _selectedGovernorate = 'الكل';
+                                _selectedGovernorate = 'all';
                                 _selectedFilterCategoryId = null;
                                 _isFilterMode = false;
                               });
@@ -434,10 +430,9 @@ class _SearchPageState extends State<SearchPage> {
                                   .isNotEmpty;
 
                               if (hasMin != hasMax) {
-                                Get.snackbar(
-                                  'تنبيه',
+                                AppFeedback.error(
+                                  context,
                                   'يرجى إدخال الحد الأدنى والأعلى للسعر معاً',
-                                  snackPosition: SnackPosition.BOTTOM,
                                 );
                                 return;
                               }
@@ -445,10 +440,9 @@ class _SearchPageState extends State<SearchPage> {
                               if (minPrice != null &&
                                   maxPrice != null &&
                                   minPrice > maxPrice) {
-                                Get.snackbar(
-                                  'تنبيه',
+                                AppFeedback.error(
+                                  context,
                                   'الحد الأدنى للسعر يجب أن يكون أقل من الحد الأعلى',
-                                  snackPosition: SnackPosition.BOTTOM,
                                 );
                                 return;
                               }
@@ -456,7 +450,7 @@ class _SearchPageState extends State<SearchPage> {
                               final hasFilter =
                                   tempCategoryId != null ||
                                   (minPrice != null && maxPrice != null) ||
-                                  tempGovernorate != 'الكل';
+                                  tempGovernorate != 'all';
 
                               setState(() {
                                 _minPrice = minPrice;
@@ -481,7 +475,9 @@ class _SearchPageState extends State<SearchPage> {
                                 categoryId: tempCategoryId,
                                 minPrice: minPrice,
                                 maxPrice: maxPrice,
-                                governorate: tempGovernorate,
+                                governorate: tempGovernorate == 'all'
+                                    ? null
+                                    : tempGovernorate,
                                 refresh: true,
                               );
                             },
@@ -576,7 +572,9 @@ class _SearchPageState extends State<SearchPage> {
         categoryId: _selectedFilterCategoryId,
         minPrice: _minPrice,
         maxPrice: _maxPrice,
-        governorate: _selectedGovernorate,
+        governorate: _selectedGovernorate == 'all'
+            ? null
+            : _selectedGovernorate,
         refresh: true,
       );
     }
@@ -705,14 +703,11 @@ class _SearchPageState extends State<SearchPage> {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   Map<String, dynamic> _productToMap(ProductModel product) {
@@ -868,7 +863,7 @@ class _SearchPageState extends State<SearchPage> {
                     setState(() {
                       _minPrice = null;
                       _maxPrice = null;
-                      _selectedGovernorate = 'الكل';
+                      _selectedGovernorate = 'all';
                       _selectedFilterCategoryId = null;
                       _isFilterMode = false;
                     });
@@ -876,7 +871,11 @@ class _SearchPageState extends State<SearchPage> {
                     _productController.clearFilteredProducts();
                   },
                   icon: const Icon(Icons.close_rounded, size: 16),
-                  label: const Text('إلغاء الفلترة'),
+                  label: Text(
+                    Localizations.localeOf(context).languageCode == 'ar'
+                        ? 'إلغاء الفلترة'
+                        : 'Clear filters',
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.error,
                     padding: EdgeInsets.zero,
@@ -1079,8 +1078,13 @@ class _SearchPageState extends State<SearchPage> {
                             Expanded(
                               child: Text(
                                 product.governorate.isNotEmpty
-                                    ? product.governorate
-                                    : 'غير متوفر',
+                                    ? LocalizedContent.value(
+                                        context,
+                                        product.governorate,
+                                      )
+                                    : AppLocalizations.of(
+                                        context,
+                                      ).translate('not_available'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDarkMode
@@ -1331,11 +1335,7 @@ class _SearchPageState extends State<SearchPage> {
             final categoryId = int.tryParse(category['id'].toString()) ?? 0;
 
             if (categoryId <= 0) {
-              Get.snackbar(
-                'تنبيه',
-                'رقم التصنيف غير صحيح',
-                snackPosition: SnackPosition.BOTTOM,
-              );
+              AppFeedback.error(context, 'رقم التصنيف غير صحيح');
               return;
             }
 

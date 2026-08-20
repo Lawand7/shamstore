@@ -8,6 +8,7 @@ import 'package:shamstore/screen/my_balanc_page.dart';
 import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/screen/change_wallet_pin_page.dart';
 import 'package:shamstore/screen/login_page.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class EnterPinScreen extends StatefulWidget {
@@ -97,11 +98,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
     }
 
     if (_pin.length != _pinLength) {
-      Get.snackbar(
-        'تنبيه',
-        'يجب أن يتكون رمز PIN من أربعة أرقام',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يجب أن يتكون رمز PIN من أربعة أرقام');
       return;
     }
 
@@ -117,12 +114,11 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
 
       _clearPin();
 
-      Get.snackbar(
-        sessionExpired ? 'انتهت الجلسة' : 'تعذر التحقق',
+      AppFeedback.error(
+        context,
         errorMessage.isNotEmpty
             ? errorMessage
             : 'تعذر التحقق من رمز PIN. حاول مرة أخرى',
-        snackPosition: SnackPosition.BOTTOM,
       );
 
       if (sessionExpired) {

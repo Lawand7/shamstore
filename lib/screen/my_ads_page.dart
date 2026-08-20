@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/features/ads/repositories/advertisement_repository.dart';
 import 'package:shamstore/screen/add_ad_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class MyAdsPage extends StatefulWidget {
@@ -139,16 +140,23 @@ class _MyAdsPageState extends State<MyAdsPage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف الإعلان'),
-        content: const Text('هل أنت متأكد من حذف هذا الإعلان؟'),
+        title: Text(_isArabic() ? 'حذف الإعلان' : 'Delete ad'),
+        content: Text(
+          _isArabic()
+              ? 'هل أنت متأكد من حذف هذا الإعلان؟'
+              : 'Are you sure you want to delete this ad?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('إلغاء'),
+            child: Text(_isArabic() ? 'إلغاء' : 'Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            child: Text(
+              _isArabic() ? 'حذف' : 'Delete',
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -164,16 +172,12 @@ class _MyAdsPageState extends State<MyAdsPage> {
       await _loadAds(refresh: true);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
+      AppFeedback.success(context, message);
     } catch (error) {
       if (!mounted) return;
 
       final message = error.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      AppFeedback.error(context, message);
     } finally {
       if (mounted) {
         setState(() => _deletingAdIds.remove(adId));
@@ -314,7 +318,7 @@ class _MyAdsPageState extends State<MyAdsPage> {
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => _loadAds(refresh: true),
-                child: const Text('إعادة المحاولة'),
+                child: Text(_isArabic() ? 'إعادة المحاولة' : 'Try again'),
               ),
             ],
           ),

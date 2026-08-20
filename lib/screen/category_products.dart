@@ -6,7 +6,9 @@ import 'package:shamstore/features/products/controllers/product_controller.dart'
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/product_details_Page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class CategoryProductsPage extends StatefulWidget {
   final int categoryId;
@@ -254,14 +256,11 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   @override
@@ -642,8 +641,13 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                             Expanded(
                               child: Text(
                                 product.governorate.isNotEmpty
-                                    ? product.governorate
-                                    : 'غير متوفر',
+                                    ? LocalizedContent.value(
+                                        context,
+                                        product.governorate,
+                                      )
+                                    : AppLocalizations.of(
+                                        context,
+                                      ).translate('not_available'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDarkMode

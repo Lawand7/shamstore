@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/features/support/repositories/support_repository.dart';
 import 'package:shamstore/screen/my_support_requests_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class SupportPage extends StatefulWidget {
@@ -39,20 +40,11 @@ class _SupportPageState extends State<SupportPage> {
 
   Future<void> _submitQuestion() async {
     final localization = AppLocalizations.of(context);
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final question = _messageController.text.trim();
     final subjectKey = _selectedIssueKey;
 
     if (question.isEmpty || subjectKey == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            localization.translate('error_empty_msg'),
-            textAlign: isAr ? TextAlign.right : TextAlign.left,
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppFeedback.error(context, localization.translate('error_empty_msg'));
       return;
     }
 
@@ -68,31 +60,18 @@ class _SupportPageState extends State<SupportPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            localization.translate('success_msg'),
-            textAlign: isAr ? TextAlign.right : TextAlign.left,
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppFeedback.success(context, localization.translate('success_msg'));
       Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
 
       final message = error.toString().replaceFirst('Exception: ', '').trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message.isNotEmpty
-                ? message
-                : localization.translate('error_empty_msg'),
-            textAlign: isAr ? TextAlign.right : TextAlign.left,
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
+      AppFeedback.error(
+        context,
+        message.isNotEmpty
+            ? message
+            : localization.translate('error_empty_msg'),
       );
     } finally {
       if (mounted) {
@@ -303,7 +282,11 @@ class _SupportPageState extends State<SupportPage> {
                         );
                       },
                 icon: const Icon(Icons.history_outlined, size: 18),
-                label: const Text('عرض طلباتي'),
+                label: Text(
+                  Localizations.localeOf(context).languageCode == 'ar'
+                      ? 'عرض طلباتي'
+                      : 'View my requests',
+                ),
               ),
             ),
           ],

@@ -37,10 +37,10 @@ Future<void> main() async {
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  static void setLocale(BuildContext context, Locale newLocale) {
+  static Future<void> setLocale(BuildContext context, Locale newLocale) async {
     final _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
 
-    state?.changeLocale(newLocale);
+    await state?.changeLocale(newLocale);
   }
 
   @override
@@ -48,7 +48,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Locale _locale = const Locale('ar');
+  Locale _locale = Locale(AppLocalizations.savedLanguageCode);
   late final Widget _initialScreen;
 
   @override
@@ -57,7 +57,11 @@ class _MyAppState extends State<MyApp> {
     _initialScreen = _resolveInitialScreen();
   }
 
-  void changeLocale(Locale locale) {
+  Future<void> changeLocale(Locale locale) async {
+    await AppLocalizations.saveLanguageCode(locale.languageCode);
+
+    if (!mounted) return;
+
     setState(() {
       _locale = locale;
     });

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/auth/controllers/forgot_password_controller.dart';
 import 'package:shamstore/screen/reset_password_screen.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -41,20 +42,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final email = _emailController.text.trim();
 
     if (email.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال البريد الإلكتروني',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال البريد الإلكتروني');
       return;
     }
 
     if (!_isValidEmail(email)) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال بريد إلكتروني صحيح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال بريد إلكتروني صحيح');
       return;
     }
 
@@ -63,21 +56,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل إرسال الرمز',
+      AppFeedback.error(
+        context,
         _forgotPasswordController.errorMessage.value.isNotEmpty
             ? _forgotPasswordController.errorMessage.value
             : 'حدث خطأ أثناء إرسال رمز التحقق',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'تم الإرسال',
-      'تم إرسال رمز التحقق إلى البريد الإلكتروني',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تم إرسال رمز التحقق إلى البريد الإلكتروني');
 
     Navigator.push(
       context,

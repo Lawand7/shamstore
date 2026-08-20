@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/notifications/controllers/notifications_controller.dart';
 import 'package:shamstore/features/notifications/models/app_notification_model.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -383,19 +385,24 @@ class _NotificationsPageState extends State<NotificationsPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('حذف الإشعار', textAlign: TextAlign.right),
+          title: Text(_text('حذف الإشعار', 'Delete notification')),
           content: Text(
-            'هل تريد حذف إشعار "${_presentationFor(notification).title}"؟',
-            textAlign: TextAlign.right,
+            _text(
+              'هل تريد حذف إشعار "${_presentationFor(notification).title}"؟',
+              'Do you want to delete "${_presentationFor(notification).title}"?',
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('إلغاء'),
+              child: Text(_text('إلغاء', 'Cancel')),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('حذف', style: TextStyle(color: AppTheme.error)),
+              child: Text(
+                _text('حذف', 'Delete'),
+                style: TextStyle(color: AppTheme.error),
+              ),
             ),
           ],
         );
@@ -433,7 +440,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                _controller.errorMessage.value,
+                LocalizedContent.message(
+                  context,
+                  _controller.errorMessage.value,
+                  isError: true,
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
@@ -447,7 +458,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                 ),
-                child: const Text('إعادة المحاولة'),
+                child: Text(_text('إعادة المحاولة', 'Try again')),
               ),
             ],
           ),
@@ -513,268 +524,93 @@ class _NotificationsPageState extends State<NotificationsPage> {
   ) {
     final normalizedTitle = notification.title.trim().toLowerCase();
     final body = notification.body.trim();
+    IconData icon = Icons.notifications_none_rounded;
+    Color color = Theme.of(context).brightness == Brightness.dark
+        ? AppTheme.accentBlue
+        : AppTheme.primary;
 
-    if (normalizedTitle == 'newadvertisment' ||
-        normalizedTitle == 'new advertisement') {
-      return const _NotificationPresentation(
-        title: 'طلب إعلان جديد',
-        body: 'يوجد طلب جديد لإضافة إعلان بانتظار المراجعة.',
-        icon: Icons.campaign_outlined,
-        color: Colors.blue,
-      );
+    if (normalizedTitle.contains('advertis')) {
+      icon = normalizedTitle.contains('unaccepted')
+          ? Icons.cancel_outlined
+          : normalizedTitle.contains('accepted')
+          ? Icons.verified_outlined
+          : Icons.campaign_outlined;
+      color = normalizedTitle.contains('unaccepted') ? Colors.red : Colors.blue;
+    } else if (normalizedTitle.contains('withdraw')) {
+      icon = Icons.price_check_outlined;
+      color = body.toLowerCase().contains('unaccepted')
+          ? Colors.red
+          : Colors.orange;
+    } else if (normalizedTitle.contains('deposit')) {
+      icon = Icons.account_balance_wallet_outlined;
+      color = body.toLowerCase().contains('unaccepted')
+          ? Colors.red
+          : Colors.green;
+    } else if (normalizedTitle.contains('shipped')) {
+      icon = Icons.local_shipping_outlined;
+      color = Colors.blue;
+    } else if (normalizedTitle.contains('rejected')) {
+      icon = Icons.cancel_outlined;
+      color = Colors.red;
+    } else if (normalizedTitle.contains('report')) {
+      icon = Icons.report_outlined;
+      color = Colors.deepOrange;
+    } else if (normalizedTitle.contains('payment')) {
+      icon = Icons.payments_outlined;
+      color = Colors.green;
+    } else if (normalizedTitle.contains('order')) {
+      icon = Icons.receipt_long_outlined;
+      color = Colors.orange;
     }
 
-    if (normalizedTitle == 'unacceptedadvertisment' ||
-        normalizedTitle == 'unaccepted advertisement') {
-      final advertisementId = _advertisementIdFromBody(body);
-
-      return _NotificationPresentation(
-        title: 'تم رفض إعلانك',
-        body: advertisementId == null
-            ? 'تم رفض إعلانك وإعادة رسوم النشر البالغة 100 ل.س إلى محفظتك.'
-            : 'تم رفض إعلانك رقم $advertisementId وإعادة رسوم النشر البالغة 100 ل.س إلى محفظتك.',
-        icon: Icons.cancel_outlined,
-        color: Colors.red,
-      );
-    }
-
-    if (normalizedTitle == 'acceptedadvertisment' ||
-        normalizedTitle == 'accepted advertisement') {
-      final advertisementId = _advertisementIdFromBody(body);
-
-      return _NotificationPresentation(
-        title: 'تم قبول إعلانك',
-        body: advertisementId == null
-            ? 'تم قبول إعلانك ونشره بنجاح.'
-            : 'تم قبول إعلانك رقم $advertisementId ونشره بنجاح.',
-        icon: Icons.verified_outlined,
-        color: Colors.green,
-      );
-    }
-
-    if (normalizedTitle == 'newdeposittransaction') {
-      return const _NotificationPresentation(
-        title: 'طلب شحن محفظة جديد',
-        body: 'يوجد طلب جديد لشحن محفظة بانتظار مراجعة الأدمن.',
-        icon: Icons.add_card_outlined,
-        color: Colors.blue,
-      );
-    }
-
-    if (normalizedTitle == 'newwithdrawtransaction') {
-      return const _NotificationPresentation(
-        title: 'طلب سحب جديد',
-        body: 'يوجد طلب جديد لسحب رصيد بانتظار مراجعة الأدمن.',
-        icon: Icons.request_page_outlined,
-        color: Colors.orange,
-      );
-    }
-
-    if (normalizedTitle == 'deposittransaction') {
-      final transactionId = _transactionIdFromBody(body);
-      final isRejected = body.toLowerCase().contains('was unaccepted');
-
-      return _NotificationPresentation(
-        title: isRejected ? 'تم رفض طلب شحن المحفظة' : 'تم قبول شحن محفظتك',
-        body: isRejected
-            ? transactionId == null
-                  ? 'تم رفض طلب الشحن ولم تتم إضافة الرصيد إلى محفظتك.'
-                  : 'تم رفض طلب الشحن رقم $transactionId ولم تتم إضافة الرصيد إلى محفظتك.'
-            : transactionId == null
-            ? 'تم قبول طلب الشحن وإضافة الرصيد إلى محفظتك.'
-            : 'تم قبول طلب الشحن رقم $transactionId وإضافة الرصيد إلى محفظتك.',
-        icon: isRejected
-            ? Icons.cancel_outlined
-            : Icons.account_balance_wallet_outlined,
-        color: isRejected ? Colors.red : Colors.green,
-      );
-    }
-
-    if (normalizedTitle == 'withdrawtransaction') {
-      final transactionId = _transactionIdFromBody(body);
-      final isRejected = body.toLowerCase().contains('was unaccepted');
-
-      return _NotificationPresentation(
-        title: isRejected ? 'تم رفض طلب السحب' : 'تم قبول طلب السحب',
-        body: isRejected
-            ? transactionId == null
-                  ? 'تم رفض طلب السحب وإعادة المبلغ المحجوز إلى محفظتك.'
-                  : 'تم رفض طلب السحب رقم $transactionId وإعادة المبلغ المحجوز إلى محفظتك.'
-            : transactionId == null
-            ? 'تم قبول طلب السحب بنجاح.'
-            : 'تم قبول طلب السحب رقم $transactionId بنجاح.',
-        icon: isRejected
-            ? Icons.currency_exchange_outlined
-            : Icons.price_check_outlined,
-        color: isRejected ? Colors.red : Colors.green,
-      );
-    }
-
-    if (normalizedTitle.contains('new order received')) {
-      return _NotificationPresentation(
-        title: 'طلب جديد',
-        body: _translateBody(
-          body,
-          englishPrefix: 'You have a new order for:',
-          arabicPrefix: 'لديك طلب جديد على المنتج:',
-        ),
-        icon: Icons.receipt_long_outlined,
-        color: Colors.orange,
-      );
-    }
-
-    if (normalizedTitle.contains('payment received')) {
-      return _NotificationPresentation(
-        title: 'تم استلام دفعة',
-        body: _translateBody(
-          body,
-          englishPrefix:
-              'An amount has been deposited into your wallet for selling:',
-          arabicPrefix: 'تمت إضافة مبلغ إلى محفظتك مقابل بيع:',
-        ),
-        icon: Icons.account_balance_wallet_outlined,
-        color: Colors.green,
-      );
-    }
-
-    if (normalizedTitle.contains('payment successful')) {
-      return _NotificationPresentation(
-        title: 'تم الدفع بنجاح',
-        body: _translateBody(
-          body,
-          englishPrefix: 'Your wallet was charged for purchasing:',
-          arabicPrefix: 'تم خصم قيمة شراء المنتج من محفظتك:',
-        ),
-        icon: Icons.payments_outlined,
-        color: Colors.green,
-      );
-    }
-
-    if (normalizedTitle.contains('order shipped') ||
-        normalizedTitle.contains('shipped')) {
-      return _NotificationPresentation(
-        title: 'تم شحن الطلب',
-        body: _translateOrderShippedBody(body),
-        icon: Icons.local_shipping_outlined,
-        color: Colors.blue,
-      );
-    }
-
-    if (normalizedTitle.contains('order rejected') ||
-        normalizedTitle.contains('rejected')) {
-      return _NotificationPresentation(
-        title: 'تم رفض الطلب',
-        body: body.isEmpty ? 'قام البائع برفض الطلب.' : body,
-        icon: Icons.cancel_outlined,
-        color: Colors.red,
-      );
-    }
-
-    if (normalizedTitle.contains('report')) {
-      return _NotificationPresentation(
-        title: 'تحديث بخصوص البلاغ',
-        body: body.isEmpty ? 'يوجد تحديث جديد بخصوص أحد بلاغاتك.' : body,
-        icon: Icons.report_outlined,
-        color: Colors.deepOrange,
-      );
-    }
+    final localizations = AppLocalizations.of(context);
 
     return _NotificationPresentation(
-      title: notification.title.isEmpty ? 'إشعار جديد' : notification.title,
-      body: body.isEmpty ? 'لديك إشعار جديد.' : body,
-      icon: Icons.notifications_none_rounded,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? AppTheme.accentBlue
-          : AppTheme.primary,
+      title: notification.title.trim().isEmpty
+          ? localizations.translate('notification_generic_title')
+          : LocalizedContent.notificationTitle(context, notification.title),
+      body: body.isEmpty
+          ? localizations.translate('notification_generic_body')
+          : LocalizedContent.notificationBody(context, body),
+      icon: icon,
+      color: color,
     );
-  }
-
-  String? _advertisementIdFromBody(String body) {
-    return RegExp(
-      r'advertisment id\s*:\s*(\d+)',
-      caseSensitive: false,
-    ).firstMatch(body)?.group(1);
-  }
-
-  String? _transactionIdFromBody(String body) {
-    return RegExp(
-      r'transaction id\s*:\s*(\d+)',
-      caseSensitive: false,
-    ).firstMatch(body)?.group(1);
-  }
-
-  String _translateOrderShippedBody(String body) {
-    final cleanBody = body.trim();
-
-    if (cleanBody.isEmpty) {
-      return 'قام البائع بشحن طلبك.';
-    }
-
-    final match = RegExp(
-      r'^Your order for\s+(.+?)\s+has been shipped\.?$',
-      caseSensitive: false,
-    ).firstMatch(cleanBody);
-
-    final productName = match?.group(1)?.trim();
-
-    if (productName == null || productName.isEmpty) {
-      return cleanBody;
-    }
-
-    return 'تم شحن طلبك الخاص بالمنتج: $productName.';
-  }
-
-  String _translateBody(
-    String body, {
-    required String englishPrefix,
-    required String arabicPrefix,
-  }) {
-    final cleanBody = body.trim();
-
-    if (cleanBody.isEmpty) {
-      return arabicPrefix;
-    }
-
-    final lowerBody = cleanBody.toLowerCase();
-    final lowerPrefix = englishPrefix.toLowerCase();
-
-    if (!lowerBody.startsWith(lowerPrefix)) {
-      return cleanBody;
-    }
-
-    final remainder = cleanBody
-        .substring(englishPrefix.length)
-        .trim()
-        .replaceFirst(RegExp(r'\.$'), '');
-
-    return remainder.isEmpty ? arabicPrefix : '$arabicPrefix $remainder.';
   }
 
   String _formatRelativeTime(DateTime? dateTime) {
     if (dateTime == null) {
-      return 'الوقت غير متوفر';
+      return _text('الوقت غير متوفر', 'Time unavailable');
     }
 
     final difference = DateTime.now().difference(dateTime);
 
     if (difference.isNegative) {
-      return 'الآن';
+      return _text('الآن', 'Now');
     }
 
     if (difference.inSeconds < 60) {
-      return 'الآن';
+      return _text('الآن', 'Now');
     }
 
     if (difference.inMinutes < 60) {
-      return 'منذ ${difference.inMinutes} دقيقة';
+      return _text(
+        'منذ ${difference.inMinutes} دقيقة',
+        '${difference.inMinutes} minutes ago',
+      );
     }
 
     if (difference.inHours < 24) {
-      return 'منذ ${difference.inHours} ساعة';
+      return _text(
+        'منذ ${difference.inHours} ساعة',
+        '${difference.inHours} hours ago',
+      );
     }
 
     if (difference.inDays < 7) {
-      return 'منذ ${difference.inDays} يوم';
+      return _text(
+        'منذ ${difference.inDays} يوم',
+        '${difference.inDays} days ago',
+      );
     }
 
     final day = dateTime.day.toString().padLeft(2, '0');
@@ -788,14 +624,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? AppTheme.error : Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 }
 

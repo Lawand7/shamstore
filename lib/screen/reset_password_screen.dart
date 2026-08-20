@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:shamstore/features/auth/controllers/forgot_password_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -117,21 +118,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل إرسال الرمز',
+      AppFeedback.error(
+        context,
         _forgotPasswordController.errorMessage.value.isNotEmpty
             ? _forgotPasswordController.errorMessage.value
             : 'حدث خطأ أثناء إرسال رمز جديد',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'تم الإرسال',
-      'تم إرسال رمز جديد إلى البريد الإلكتروني',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تم إرسال رمز جديد إلى البريد الإلكتروني');
   }
 
   Future<void> _submitResetPassword() async {
@@ -140,38 +136,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (otp.length != 6) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال رمز التحقق المكون من 6 أرقام',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال رمز التحقق المكون من 6 أرقام');
       return;
     }
 
     if (password.isEmpty || confirmPassword.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال كلمة المرور وتأكيدها',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال كلمة المرور وتأكيدها');
       return;
     }
 
     if (password.length < 8) {
-      Get.snackbar(
-        'تنبيه',
-        'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
       return;
     }
 
     if (password != confirmPassword) {
-      Get.snackbar(
-        'تنبيه',
-        'كلمة المرور وتأكيد كلمة المرور غير متطابقين',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'كلمة المرور وتأكيد كلمة المرور غير متطابقين');
       return;
     }
 
@@ -185,21 +165,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل استعادة كلمة المرور',
+      AppFeedback.error(
+        context,
         _forgotPasswordController.errorMessage.value.isNotEmpty
             ? _forgotPasswordController.errorMessage.value
             : 'حدث خطأ أثناء استعادة كلمة المرور',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'message_password_changed');
 
     Navigator.pop(context);
     Navigator.pop(context);

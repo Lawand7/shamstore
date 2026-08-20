@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../constants/api_constants.dart';
 import '../storage/token_storage.dart';
+import '../../utils/app_localizations.dart';
 
 class DioClient {
   DioClient._();
@@ -24,6 +25,9 @@ class DioClient {
           InterceptorsWrapper(
             onRequest: (options, handler) {
               final token = TokenStorage.getToken();
+
+              options.headers['Accept-Language'] =
+                  AppLocalizations.currentLanguageCode;
 
               if (!_isPublicAuthRequest(options.path) &&
                   token != null &&

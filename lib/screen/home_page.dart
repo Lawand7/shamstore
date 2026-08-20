@@ -22,7 +22,9 @@ import 'package:shamstore/screen/seller_orders_page.dart';
 import 'package:shamstore/screen/widgets/home_ads_section.dart';
 import 'package:shamstore/screen/widgets/exit_confirmation_scope.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
+import 'package:shamstore/utils/localized_content.dart';
 
 class HomePage extends StatefulWidget {
   final bool isBuyer;
@@ -344,14 +346,11 @@ class _HomePageState extends State<HomePage> {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    if (isError) {
+      AppFeedback.error(context, message);
+    } else {
+      AppFeedback.success(context, message);
+    }
   }
 
   String _formatPrice(double value) {
@@ -858,7 +857,11 @@ class _HomePageState extends State<HomePage> {
           Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 36),
           const SizedBox(height: 10),
           Text(
-            _productController.errorMessage.value,
+            LocalizedContent.message(
+              context,
+              _productController.errorMessage.value,
+              isError: true,
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
@@ -1017,8 +1020,13 @@ class _HomePageState extends State<HomePage> {
                             Expanded(
                               child: Text(
                                 product.governorate.isNotEmpty
-                                    ? product.governorate
-                                    : 'غير متوفر',
+                                    ? LocalizedContent.value(
+                                        context,
+                                        product.governorate,
+                                      )
+                                    : AppLocalizations.of(
+                                        context,
+                                      ).translate('not_available'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDarkMode

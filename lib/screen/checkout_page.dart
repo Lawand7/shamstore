@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/orders/controllers/order_controller.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -581,11 +582,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 10),
-              Expanded(child: Text('تم إنشاء الطلب')),
+              const Icon(Icons.check_circle, color: Colors.green),
+              const SizedBox(width: 10),
+              Expanded(child: Text(_text('تم إنشاء الطلب', 'Order created'))),
             ],
           ),
           content: Text(message),
@@ -594,7 +595,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: const Text('موافق'),
+              child: Text(_text('موافق', 'OK')),
             ),
           ],
         );
@@ -607,28 +608,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    AppFeedback.error(context, message);
   }
 
   String? _validatePhone(String? value) {
     final String phone = value?.trim() ?? '';
 
     if (phone.isEmpty) {
-      return 'يرجى إدخال رقم الهاتف';
+      return _text('يرجى إدخال رقم الهاتف', 'Please enter the phone number');
     }
 
     final String digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (digitsOnly.length < 8) {
-      return 'رقم الهاتف غير صحيح';
+      return _text('رقم الهاتف غير صحيح', 'Please enter a valid phone number');
     }
 
     return null;
@@ -638,11 +631,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final String address = value?.trim() ?? '';
 
     if (address.isEmpty) {
-      return 'يرجى إدخال عنوان التوصيل';
+      return _text(
+        'يرجى إدخال عنوان التوصيل',
+        'Please enter the delivery address',
+      );
     }
 
     if (address.length < 5) {
-      return 'عنوان التوصيل قصير جداً';
+      return _text(
+        'عنوان التوصيل قصير جداً',
+        'The delivery address is too short',
+      );
     }
 
     return null;
@@ -754,7 +753,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
     }
 
-    return 'المنتج';
+    return _text('المنتج', 'Product');
   }
 
   dynamic _extractProductPrice() {
@@ -830,6 +829,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
 
     return double.tryParse(value.toString());
+  }
+
+  String _text(String arabic, String english) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? arabic
+        : english;
   }
 
   TextAlign _textInputLeftRight() {

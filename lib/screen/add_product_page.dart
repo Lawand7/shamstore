@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:shamstore/features/seller/controllers/seller_product_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -92,11 +93,8 @@ class _AddProductPageState extends State<AddProductPage> {
         _selectedImageFile = File(pickedImage.path);
       });
     } catch (e) {
-      Get.snackbar(
-        'خطأ',
-        'تعذر اختيار الصورة',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (!mounted) return;
+      AppFeedback.error(context, 'تعذر اختيار الصورة');
     }
   }
 
@@ -107,56 +105,32 @@ class _AddProductPageState extends State<AddProductPage> {
     final quantityText = _qtyController.text.trim();
 
     if (_selectedImageFile == null) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى اختيار صورة المنتج',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى اختيار صورة المنتج');
       return;
     }
 
     if (title.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال اسم المنتج',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال اسم المنتج');
       return;
     }
 
     if (priceText.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال السعر',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال السعر');
       return;
     }
 
     if (quantityText.isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى إدخال الكمية',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى إدخال الكمية');
       return;
     }
 
     if (_selectedCategoryId == null) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى اختيار التصنيف',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى اختيار التصنيف');
       return;
     }
 
     if (_selectedGovernorate == null || _selectedGovernorate!.trim().isEmpty) {
-      Get.snackbar(
-        'تنبيه',
-        'يرجى اختيار المحافظة',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'يرجى اختيار المحافظة');
       return;
     }
 
@@ -164,20 +138,12 @@ class _AddProductPageState extends State<AddProductPage> {
     final quantity = int.tryParse(quantityText);
 
     if (price == null || price < 0) {
-      Get.snackbar(
-        'تنبيه',
-        'السعر غير صالح',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'السعر غير صالح');
       return;
     }
 
     if (quantity == null || quantity < 0) {
-      Get.snackbar(
-        'تنبيه',
-        'الكمية غير صالحة',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppFeedback.error(context, 'الكمية غير صالحة');
       return;
     }
 
@@ -194,21 +160,16 @@ class _AddProductPageState extends State<AddProductPage> {
     if (!mounted) return;
 
     if (!success) {
-      Get.snackbar(
-        'فشل إضافة المنتج',
+      AppFeedback.error(
+        context,
         _sellerProductController.createProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.createProductErrorMessage.value
             : 'حدث خطأ أثناء إضافة المنتج',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    Get.snackbar(
-      'نجاح',
-      'تمت إضافة المنتج بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    AppFeedback.success(context, 'تمت إضافة المنتج بنجاح');
 
     Navigator.pop(context, true);
   }

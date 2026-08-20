@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/features/wallet/repositories/wallet_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة
 
 class ChargeWalletPage extends StatefulWidget {
@@ -30,21 +31,11 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
     final parsedAmount = num.tryParse(amount);
 
     if (parsedAmount == null || parsedAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('أدخل مبلغ شحن صحيحًا أكبر من الصفر'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppFeedback.error(context, 'أدخل مبلغ شحن صحيحًا أكبر من الصفر');
       return;
     }
     if (transferNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('أدخل رقم عملية التحويل'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppFeedback.error(context, 'أدخل رقم عملية التحويل');
       return;
     }
 
@@ -56,17 +47,13 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
       );
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
+      AppFeedback.success(context, message);
       Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) return;
 
       final message = error.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      AppFeedback.error(context, message);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

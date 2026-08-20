@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/features/ads/repositories/advertisement_repository.dart';
 
@@ -77,28 +78,12 @@ class _AddAdPageState extends State<AddAdPage> {
         governorate: _governorateApiValue(_selectedGovernorate!),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppFeedback.success(context, message);
       Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) return;
       final message = error.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppFeedback.error(context, message);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
