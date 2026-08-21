@@ -113,12 +113,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-
               Container(
                 height: 90,
                 width: 90,
                 decoration: BoxDecoration(
-                  color: activePrimary.withOpacity(0.1),
+                  color: activePrimary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -127,9 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   color: activePrimary,
                 ),
               ),
-
               const SizedBox(height: 24),
-
               Text(
                 AppLocalizations.of(context).translate('Forgot Password?'),
                 style: TextStyle(
@@ -138,9 +135,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   color: activePrimary,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               Text(
                 'أدخل بريدك الإلكتروني لإرسال رمز التحقق وإعادة تعيين كلمة المرور.',
                 textAlign: TextAlign.center,
@@ -152,9 +147,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   height: 1.5,
                 ),
               ),
-
               const SizedBox(height: 40),
-
               Align(
                 alignment: isArabic
                     ? Alignment.centerRight
@@ -175,7 +168,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-
               Directionality(
                 textDirection: TextDirection.ltr,
                 child: TextField(
@@ -192,7 +184,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     hintText: 'example@gmail.com',
                     hintStyle: TextStyle(
                       color: isDarkMode
-                          ? AppTheme.textSecondary.withOpacity(0.5)
+                          ? AppTheme.textSecondary.withValues(alpha: 0.5)
                           : Colors.black26,
                       fontSize: 14,
                     ),
@@ -225,9 +217,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 40),
-
               Obx(() {
                 final isLoading = _forgotPasswordController.isSendingOtp.value;
 
@@ -267,7 +257,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 );
               }),
-
               const SizedBox(height: 20),
             ],
           ),

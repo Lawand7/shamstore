@@ -29,7 +29,6 @@ class AboutAppPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-
             Center(
               child: Container(
                 width: 110,
@@ -40,7 +39,7 @@ class AboutAppPage extends StatelessWidget {
                   border: Border.all(color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+                      color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     )
@@ -53,7 +52,6 @@ class AboutAppPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
             Text(
               'ShamStore',
               style: TextStyle(
@@ -64,13 +62,11 @@ class AboutAppPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-
             Text(
               AppLocalizations.of(context).translate('Your integrated platform for shopping and services'),
               style: TextStyle(fontSize: 13, color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey),
             ),
             const SizedBox(height: 30),
-
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -78,7 +74,7 @@ class AboutAppPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.03),
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
@@ -95,7 +91,6 @@ class AboutAppPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
@@ -104,14 +99,11 @@ class AboutAppPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-
             _buildFeatureRow(context, Icons.bolt, 'Super fast browsing of products and orders', isDarkMode),
             _buildFeatureRow(context, Icons.shield_outlined, 'Full security and protection for user and store data', isDarkMode),
             _buildFeatureRow(context, Icons.layers_outlined, 'Diversity of sections (clothing, electronics, and service ads)', isDarkMode),
             _buildFeatureRow(context, Icons.support_agent, 'Continuous technical support to solve problems and follow up reports', isDarkMode),
-
             const SizedBox(height: 40),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -144,7 +136,7 @@ class AboutAppPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: (isDarkMode ? AppTheme.accentBlue : AppTheme.primary).withOpacity(0.08),
+              color: (isDarkMode ? AppTheme.accentBlue : AppTheme.primary).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 18, color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary),

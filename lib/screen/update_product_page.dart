@@ -31,6 +31,12 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
   File? _selectedImageFile;
   int? _selectedCategoryId;
   String? _selectedGovernorate;
+  String? _selectedStatus;
+
+  final List<Map<String, String>> _productStatuses = const [
+    {'value': 'new', 'labelKey': 'status_new'},
+    {'value': 'used', 'labelKey': 'status_used'},
+  ];
 
   final List<Map<String, dynamic>> _categories = const [
     {'id': 1, 'name': 'Electronics'},
@@ -104,6 +110,13 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     if (governorateValue != null && _governorates.contains(governorateValue)) {
       _selectedGovernorate = governorateValue;
     }
+
+    final statusValue = widget.product['status']?.toString().toLowerCase();
+    if (statusValue == 'new' || statusValue == 'used') {
+      _selectedStatus = statusValue;
+    } else {
+      _selectedStatus = 'new';
+    }
   }
 
   String _readText(List<String> keys) {
@@ -140,13 +153,19 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       });
     } catch (_) {
       if (!mounted) return;
-      AppFeedback.error(context, 'تعذر اختيار الصورة');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_pick_image'),
+      );
     }
   }
 
   Future<void> _submitUpdate() async {
     if (_productId <= 0) {
-      AppFeedback.error(context, 'معرّف المنتج غير صالح');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_product_id'),
+      );
       return;
     }
 
@@ -156,7 +175,18 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     final quantityText = _qtyController.text.trim();
 
     if (title.isEmpty) {
-      AppFeedback.error(context, 'يرجى إدخال اسم المنتج');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_name_required'),
+      );
+      return;
+    }
+
+    if (_selectedStatus == null) {
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_status_required'),
+      );
       return;
     }
 
@@ -167,7 +197,10 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       price = double.tryParse(priceText);
 
       if (price == null || price < 0) {
-        AppFeedback.error(context, 'السعر غير صالح');
+        AppFeedback.error(
+          context,
+          AppLocalizations.of(context).translate('error_invalid_price'),
+        );
         return;
       }
     }
@@ -176,7 +209,10 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       quantity = int.tryParse(quantityText);
 
       if (quantity == null || quantity < 0) {
-        AppFeedback.error(context, 'الكمية غير صالحة');
+        AppFeedback.error(
+          context,
+          AppLocalizations.of(context).translate('error_invalid_quantity'),
+        );
         return;
       }
     }
@@ -189,6 +225,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       quantity: quantity,
       governorate: _selectedGovernorate,
       categoryId: _selectedCategoryId,
+      status: _selectedStatus,
       productImageFile: _selectedImageFile,
     );
 
@@ -199,12 +236,17 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         context,
         _sellerProductController.updateProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.updateProductErrorMessage.value
-            : 'حدث خطأ أثناء تعديل المنتج',
+            : AppLocalizations.of(
+                context,
+              ).translate('error_update_product_failed'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'تم تعديل المنتج بنجاح');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_product_updated'),
+    );
 
     Navigator.pop(context, {
       'updated': true,
@@ -215,6 +257,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
       'description': description,
       'category_id': _selectedCategoryId,
       'governorate': _selectedGovernorate,
+      'status': _selectedStatus,
     });
   }
 
@@ -275,7 +318,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         height: 160,
         decoration: BoxDecoration(
           color: _selectedImageFile != null
-              ? activeColor.withOpacity(0.08)
+              ? activeColor.withValues(alpha: 0.08)
               : (isDarkMode ? AppTheme.cardBackground : AppTheme.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -295,7 +338,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
                 children: [
                   Icon(
                     Icons.camera_alt_outlined,
-                    color: activeColor.withOpacity(0.6),
+                    color: activeColor.withValues(alpha: 0.6),
                     size: 38,
                   ),
                   const SizedBox(height: 8),
@@ -311,9 +354,14 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'اختياري: اختر صورة جديدة فقط إذا أردت تغييرها',
-                    style: TextStyle(color: AppTheme.textLight, fontSize: 11),
+                  Text(
+                    AppLocalizations.of(
+                      context,
+                    ).translate('optional_change_image_hint'),
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -329,7 +377,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -374,6 +422,8 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
           ),
           const SizedBox(height: 12),
           _buildCategoryDropdown(isDarkMode),
+          const SizedBox(height: 12),
+          _buildStatusDropdown(isDarkMode),
           const SizedBox(height: 12),
           _buildGovernorateDropdown(isDarkMode),
           const SizedBox(height: 12),
@@ -421,6 +471,60 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     );
   }
 
+  Widget _buildStatusDropdown(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          AppLocalizations.of(context).translate('product_status_label'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedStatus,
+          dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+          hint: Text(
+            AppLocalizations.of(context).translate('product_status_hint'),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+          ),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 12,
+          ),
+          decoration: _inputDecoration(
+            hint: '',
+            icon: Icons.new_releases_outlined,
+            isDarkMode: isDarkMode,
+          ),
+          items: _productStatuses.map((status) {
+            return DropdownMenuItem<String>(
+              value: status['value'],
+              child: Text(
+                AppLocalizations.of(context).translate(status['labelKey']!),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedStatus = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategoryDropdown(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -435,7 +539,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<int>(
-          value: _selectedCategoryId,
+          initialValue: _selectedCategoryId,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Category')}',
@@ -492,7 +596,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: _selectedGovernorate,
+          initialValue: _selectedGovernorate,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Governorate')}',

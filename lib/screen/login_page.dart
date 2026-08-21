@@ -94,9 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(isDarkMode ? 0.05 : 0.15),
+                color: Colors.white.withValues(alpha: isDarkMode ? 0.05 : 0.15),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: Icon(
                 Icons.shopping_bag_outlined,
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.06),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.06),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/screen/change_password_page.dart';
 import 'package:shamstore/screen/change_wallet_pin_page.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 
 class SecuritySettingsPage extends StatelessWidget {
   const SecuritySettingsPage({super.key});
@@ -25,7 +26,7 @@ class SecuritySettingsPage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          isArabic ? 'إعدادات الأمان' : 'Security Settings',
+          AppLocalizations.of(context).translate('security_settings_title'),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -57,7 +58,9 @@ class SecuritySettingsPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+                      color: Colors.black.withValues(
+                        alpha: isDarkMode ? 0.15 : 0.05,
+                      ),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),
@@ -72,9 +75,9 @@ class SecuritySettingsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      isArabic
-                          ? 'إدارة إعدادات حماية الحساب والمحفظة'
-                          : 'Manage account and wallet security settings',
+                      AppLocalizations.of(
+                        context,
+                      ).translate('security_settings_desc'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isDarkMode
@@ -93,10 +96,12 @@ class SecuritySettingsPage extends StatelessWidget {
                 isDarkMode: isDarkMode,
                 activePrimary: activePrimary,
                 icon: Icons.lock_reset_rounded,
-                title: isArabic ? 'تغيير كلمة المرور' : 'Change Password',
-                subtitle: isArabic
-                    ? 'تحديث كلمة مرور تسجيل الدخول إلى الحساب'
-                    : 'Update your account sign-in password',
+                title: AppLocalizations.of(
+                  context,
+                ).translate('change_password_title'),
+                subtitle: AppLocalizations.of(
+                  context,
+                ).translate('change_password_desc'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -112,10 +117,12 @@ class SecuritySettingsPage extends StatelessWidget {
                 isDarkMode: isDarkMode,
                 activePrimary: activePrimary,
                 icon: Icons.pin_rounded,
-                title: isArabic ? 'تغيير رمز المحفظة PIN' : 'Change Wallet PIN',
-                subtitle: isArabic
-                    ? 'تحديث رمز PIN المستخدم في عمليات المحفظة'
-                    : 'Update the PIN used for wallet transactions',
+                title: AppLocalizations.of(
+                  context,
+                ).translate('change_wallet_pin_title'),
+                subtitle: AppLocalizations.of(
+                  context,
+                ).translate('change_wallet_pin_desc'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -154,7 +161,7 @@ class SecuritySettingsPage extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.12 : 0.04),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.12 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -166,7 +173,7 @@ class SecuritySettingsPage extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: activePrimary.withOpacity(0.12),
+                color: activePrimary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: activePrimary, size: 24),

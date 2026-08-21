@@ -152,7 +152,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.add, color: AppTheme.white, size: 25),
@@ -248,7 +248,9 @@ class _MyProductsPageState extends State<MyProductsPage> {
             const SizedBox(height: 12),
             Text(
               errorMessage.isEmpty
-                  ? 'حدث خطأ أثناء تحميل المنتجات'
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('error_loading_products')
                   : errorMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -259,7 +261,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadCurrentTab,
-              child: Text(_isArabic() ? 'إعادة المحاولة' : 'Try again'),
+              child: Text(AppLocalizations.of(context).translate('retry')),
             ),
           ],
         ),
@@ -306,7 +308,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -495,7 +497,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -548,7 +550,7 @@ class _MyProductsPageState extends State<MyProductsPage> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'الكمية المتوفرة: ${product['quantity'] ?? 0}',
+                      '${AppLocalizations.of(context).translate('available_quantity_label')} ${product['quantity'] ?? 0}',
                       style: TextStyle(
                         fontSize: 10,
                         color: isDarkMode
@@ -564,8 +566,8 @@ class _MyProductsPageState extends State<MyProductsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isPublished
-                      ? greenColor.withOpacity(isDarkMode ? 0.15 : 0.1)
-                      : redColor.withOpacity(isDarkMode ? 0.15 : 0.1),
+                      ? greenColor.withValues(alpha: isDarkMode ? 0.15 : 0.1)
+                      : redColor.withValues(alpha: isDarkMode ? 0.15 : 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -694,7 +696,10 @@ class _MyProductsPageState extends State<MyProductsPage> {
     required String title,
   }) async {
     if (productId <= 0) {
-      AppFeedback.error(context, 'معرّف المنتج غير صالح');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_product_id'),
+      );
       return;
     }
 
@@ -709,7 +714,9 @@ class _MyProductsPageState extends State<MyProductsPage> {
               ? AppTheme.cardBackground
               : AppTheme.white,
           title: Text(
-            'تأكيد الحذف',
+            AppLocalizations.of(
+              dialogContext,
+            ).translate('confirm_delete_title'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontWeight: FontWeight.w600,
@@ -717,8 +724,10 @@ class _MyProductsPageState extends State<MyProductsPage> {
           ),
           content: Text(
             title.trim().isEmpty
-                ? 'هل أنت متأكد من حذف هذا المنتج؟'
-                : 'هل أنت متأكد من حذف المنتج "$title"؟',
+                ? AppLocalizations.of(
+                    dialogContext,
+                  ).translate('confirm_delete_product_generic_msg')
+                : '${AppLocalizations.of(dialogContext).translate('confirm_delete_product_msg')} "$title"؟',
             style: TextStyle(
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
             ),
@@ -726,11 +735,15 @@ class _MyProductsPageState extends State<MyProductsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(_isArabic() ? 'إلغاء' : 'Cancel'),
+              child: Text(
+                AppLocalizations.of(dialogContext).translate('Cancel'),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(_isArabic() ? 'حذف' : 'Delete'),
+              child: Text(
+                AppLocalizations.of(dialogContext).translate('Delete Action'),
+              ),
             ),
           ],
         );
@@ -754,12 +767,15 @@ class _MyProductsPageState extends State<MyProductsPage> {
         context,
         _sellerProductController.deleteProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.deleteProductErrorMessage.value
-            : 'حدث خطأ أثناء حذف المنتج',
+            : AppLocalizations.of(context).translate('error_deleting_product'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'تم حذف المنتج بنجاح');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_product_deleted'),
+    );
 
     await _reloadAfterDataChange();
   }
@@ -769,7 +785,10 @@ class _MyProductsPageState extends State<MyProductsPage> {
     required bool isPublished,
   }) async {
     if (productId <= 0) {
-      AppFeedback.error(context, 'معرّف المنتج غير صالح');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_product_id'),
+      );
       return;
     }
 
@@ -784,14 +803,18 @@ class _MyProductsPageState extends State<MyProductsPage> {
         context,
         _sellerProductController.productVisibilityErrorMessage.value.isNotEmpty
             ? _sellerProductController.productVisibilityErrorMessage.value
-            : 'حدث خطأ أثناء تغيير حالة المنتج',
+            : AppLocalizations.of(
+                context,
+              ).translate('error_changing_product_status'),
       );
       return;
     }
 
     AppFeedback.success(
       context,
-      isPublished ? 'تم إخفاء المنتج بنجاح' : 'تم نشر المنتج بنجاح',
+      isPublished
+          ? AppLocalizations.of(context).translate('success_product_hidden')
+          : AppLocalizations.of(context).translate('success_product_published'),
     );
 
     await _reloadAfterDataChange();
@@ -878,9 +901,9 @@ class _MyProductsPageState extends State<MyProductsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [

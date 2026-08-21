@@ -73,8 +73,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         title: Obx(
           () => Text(
             _controller.unreadCount > 0
-                ? 'الإشعارات (${_controller.unreadCount})'
-                : 'الإشعارات',
+                ? '${AppLocalizations.of(context).translate('Notifications')} (${_controller.unreadCount})'
+                : AppLocalizations.of(context).translate('Notifications'),
             style: const TextStyle(
               color: AppTheme.white,
               fontSize: 18,
@@ -122,24 +122,68 @@ class _NotificationsPageState extends State<NotificationsPage> {
               }
 
               final notification = _controller.notifications[index];
+              final String notificationTitle = notification.title;
 
               return Dismissible(
                 key: ValueKey<int>(notification.id),
                 direction: DismissDirection.endToStart,
                 confirmDismiss: (_) async {
-                  return await _confirmDelete(notification);
+                  final bool? shouldDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) {
+                      return AlertDialog(
+                        title: Text(
+                          AppLocalizations.of(
+                            dialogContext,
+                          ).translate('delete_notification_title'),
+                        ),
+                        content: Text(
+                          '${AppLocalizations.of(dialogContext).translate('delete_notification_msg')} "$notificationTitle"؟',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: Text(
+                              AppLocalizations.of(
+                                dialogContext,
+                              ).translate('Cancel'),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: Text(
+                              AppLocalizations.of(
+                                dialogContext,
+                              ).translate('Delete Action'),
+                              style: const TextStyle(color: AppTheme.error),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  return shouldDelete ?? false;
                 },
                 onDismissed: (_) async {
                   final success = await _controller.deleteNotification(
                     notification.id,
                   );
 
-                  if (!success && mounted) {
+                  if (!mounted) return;
+
+                  if (!success) {
                     _showSnackBar(
-                      title: 'فشل الحذف',
+                      title: AppLocalizations.of(
+                        context,
+                      ).translate('delete_failed'),
                       message: _controller.actionErrorMessage.value.isNotEmpty
                           ? _controller.actionErrorMessage.value
-                          : 'تعذر حذف الإشعار',
+                          : AppLocalizations.of(
+                              context,
+                            ).translate('error_deleting_notification'),
                       isError: true,
                     );
 
@@ -175,6 +219,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     final _NotificationPresentation presentation = _presentationFor(
       notification,
+      context,
     );
 
     return Material(
@@ -187,12 +232,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 if (!notification.isRead) {
                   final success = await _controller.markAsRead(notification.id);
 
-                  if (!success && mounted) {
+                  if (!mounted) return;
+
+                  if (!success) {
                     _showSnackBar(
-                      title: 'فشل العملية',
+                      title: AppLocalizations.of(
+                        context,
+                      ).translate('failed_action'),
                       message: _controller.actionErrorMessage.value.isNotEmpty
                           ? _controller.actionErrorMessage.value
-                          : 'تعذر تعليم الإشعار كمقروء',
+                          : AppLocalizations.of(
+                              context,
+                            ).translate('error_marking_read'),
                       isError: true,
                     );
                   }
@@ -201,9 +252,44 @@ class _NotificationsPageState extends State<NotificationsPage> {
         onLongPress: isBusy
             ? null
             : () async {
-                final shouldDelete = await _confirmDelete(notification);
+                final bool? shouldDelete = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) {
+                    return AlertDialog(
+                      title: Text(
+                        AppLocalizations.of(
+                          dialogContext,
+                        ).translate('delete_notification_title'),
+                      ),
+                      content: Text(
+                        '${AppLocalizations.of(dialogContext).translate('delete_notification_msg')} "${presentation.title}"؟',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          child: Text(
+                            AppLocalizations.of(
+                              dialogContext,
+                            ).translate('Cancel'),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          child: Text(
+                            AppLocalizations.of(
+                              dialogContext,
+                            ).translate('Delete Action'),
+                            style: const TextStyle(color: AppTheme.error),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
 
-                if (!shouldDelete) {
+                if (shouldDelete != true || !mounted) {
                   return;
                 }
 
@@ -216,12 +302,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 }
 
                 _showSnackBar(
-                  title: success ? 'تم الحذف' : 'فشل الحذف',
+                  title: success
+                      ? AppLocalizations.of(context).translate('delete_success')
+                      : AppLocalizations.of(context).translate('delete_failed'),
                   message: success
-                      ? 'تم حذف الإشعار بنجاح'
+                      ? AppLocalizations.of(
+                          context,
+                        ).translate('success_notification_deleted')
                       : (_controller.actionErrorMessage.value.isNotEmpty
                             ? _controller.actionErrorMessage.value
-                            : 'تعذر حذف الإشعار'),
+                            : AppLocalizations.of(
+                                context,
+                              ).translate('error_deleting_notification')),
                   isError: !success,
                 );
               },
@@ -366,50 +458,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
         color: AppTheme.error,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.delete_outline, color: Colors.white),
-          SizedBox(width: 6),
+          const Icon(Icons.delete_outline, color: Colors.white),
+          const SizedBox(width: 6),
           Text(
-            'حذف',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            AppLocalizations.of(context).translate('Delete Action'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  Future<bool> _confirmDelete(AppNotificationModel notification) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(_text('حذف الإشعار', 'Delete notification')),
-          content: Text(
-            _text(
-              'هل تريد حذف إشعار "${_presentationFor(notification).title}"؟',
-              'Do you want to delete "${_presentationFor(notification).title}"?',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(_text('إلغاء', 'Cancel')),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(
-                _text('حذف', 'Delete'),
-                style: TextStyle(color: AppTheme.error),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
   }
 
   Widget _buildErrorState(bool isDarkMode) {
@@ -458,7 +521,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                 ),
-                child: Text(_text('إعادة المحاولة', 'Try again')),
+                child: Text(AppLocalizations.of(context).translate('retry')),
               ),
             ],
           ),
@@ -501,7 +564,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'ستظهر هنا إشعارات الطلبات والدفعات والحالات الأخرى.',
+                    AppLocalizations.of(
+                      context,
+                    ).translate('notifications_placeholder_body'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
@@ -521,11 +586,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   _NotificationPresentation _presentationFor(
     AppNotificationModel notification,
+    BuildContext ctx,
   ) {
     final normalizedTitle = notification.title.trim().toLowerCase();
     final body = notification.body.trim();
     IconData icon = Icons.notifications_none_rounded;
-    Color color = Theme.of(context).brightness == Brightness.dark
+    Color color = Theme.of(ctx).brightness == Brightness.dark
         ? AppTheme.accentBlue
         : AppTheme.primary;
 
@@ -563,15 +629,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
       color = Colors.orange;
     }
 
-    final localizations = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(ctx);
 
     return _NotificationPresentation(
       title: notification.title.trim().isEmpty
           ? localizations.translate('notification_generic_title')
-          : LocalizedContent.notificationTitle(context, notification.title),
+          : LocalizedContent.notificationTitle(ctx, notification.title),
       body: body.isEmpty
           ? localizations.translate('notification_generic_body')
-          : LocalizedContent.notificationBody(context, body),
+          : LocalizedContent.notificationBody(ctx, body),
       icon: icon,
       color: color,
     );
@@ -579,38 +645,35 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   String _formatRelativeTime(DateTime? dateTime) {
     if (dateTime == null) {
-      return _text('الوقت غير متوفر', 'Time unavailable');
+      return AppLocalizations.of(context).translate('time_unavailable');
     }
 
     final difference = DateTime.now().difference(dateTime);
 
     if (difference.isNegative) {
-      return _text('الآن', 'Now');
+      return AppLocalizations.of(context).translate('time_now');
     }
 
     if (difference.inSeconds < 60) {
-      return _text('الآن', 'Now');
+      return AppLocalizations.of(context).translate('time_now');
     }
 
     if (difference.inMinutes < 60) {
-      return _text(
-        'منذ ${difference.inMinutes} دقيقة',
-        '${difference.inMinutes} minutes ago',
-      );
+      return AppLocalizations.of(context)
+          .translate('time_minutes_ago')
+          .replaceAll('{minutes}', difference.inMinutes.toString());
     }
 
     if (difference.inHours < 24) {
-      return _text(
-        'منذ ${difference.inHours} ساعة',
-        '${difference.inHours} hours ago',
-      );
+      return AppLocalizations.of(context)
+          .translate('time_hours_ago')
+          .replaceAll('{hours}', difference.inHours.toString());
     }
 
     if (difference.inDays < 7) {
-      return _text(
-        'منذ ${difference.inDays} يوم',
-        '${difference.inDays} days ago',
-      );
+      return AppLocalizations.of(context)
+          .translate('time_days_ago')
+          .replaceAll('{days}', difference.inDays.toString());
     }
 
     final day = dateTime.day.toString().padLeft(2, '0');
@@ -629,12 +692,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     } else {
       AppFeedback.success(context, message);
     }
-  }
-
-  String _text(String arabic, String english) {
-    return Localizations.localeOf(context).languageCode == 'ar'
-        ? arabic
-        : english;
   }
 }
 

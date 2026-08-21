@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/auth/controllers/change_pin_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 
 class ChangeWalletPinPage extends StatefulWidget {
   const ChangeWalletPinPage({super.key});
@@ -51,7 +52,10 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
     final confirmPin = _confirmPinController.text.trim();
 
     if (newPin != confirmPin) {
-      AppFeedback.error(context, 'رمز PIN الجديد وتأكيده غير متطابقين');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_pin_mismatch'),
+      );
       return;
     }
 
@@ -67,12 +71,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
         context,
         _changePinController.errorMessage.value.isNotEmpty
             ? _changePinController.errorMessage.value
-            : 'حدث خطأ أثناء تغيير رمز PIN',
+            : AppLocalizations.of(context).translate('error_change_pin_failed'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'message_pin_changed');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('message_pin_changed'),
+    );
 
     Navigator.pop(context);
   }
@@ -93,9 +100,9 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'تغيير رمز المحفظة PIN',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context).translate('change_wallet_pin_title'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -121,12 +128,11 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 10),
-
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: activePrimary.withOpacity(0.1),
+                      color: activePrimary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -136,13 +142,11 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 Text(
-                  isArabic
-                      ? 'أدخل كلمة مرور حسابك ثم اختر رمز PIN جديد للمحفظة.'
-                      : 'Enter your account password, then choose a new wallet PIN.',
+                  AppLocalizations.of(
+                    context,
+                  ).translate('change_pin_instructions'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isDarkMode
@@ -152,15 +156,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     height: 1.5,
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
                 _buildPasswordField(
                   controller: _passwordController,
-                  label: isArabic ? 'كلمة مرور الحساب' : 'Account password',
-                  hint: isArabic
-                      ? 'أدخل كلمة مرور الحساب'
-                      : 'Enter account password',
+                  label: AppLocalizations.of(
+                    context,
+                  ).translate('account_password_label'),
+                  hint: AppLocalizations.of(
+                    context,
+                  ).translate('account_password_hint'),
                   isObscure: _obscurePassword,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -170,15 +174,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final password = value?.trim() ?? '';
 
                     if (password.isEmpty) {
-                      return isArabic
-                          ? 'كلمة مرور الحساب مطلوبة'
-                          : 'Account password is required';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('account_password_required');
                     }
 
                     if (password.length < 8) {
-                      return isArabic
-                          ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
-                          : 'Password must be at least 8 characters';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('error_password_length');
                     }
 
                     return null;
@@ -187,13 +191,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     setState(() => _obscurePassword = !_obscurePassword);
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildPasswordField(
                   controller: _newPinController,
-                  label: isArabic ? 'رمز PIN الجديد' : 'New PIN',
-                  hint: isArabic ? 'أدخل 4 أرقام' : 'Enter 4 digits',
+                  label: AppLocalizations.of(
+                    context,
+                  ).translate('new_pin_label'),
+                  hint: AppLocalizations.of(
+                    context,
+                  ).translate('enter_4_digits'),
                   isObscure: _obscureNewPin,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -206,15 +212,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final pin = value?.trim() ?? '';
 
                     if (pin.isEmpty) {
-                      return isArabic
-                          ? 'رمز PIN الجديد مطلوب'
-                          : 'New PIN is required';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('new_pin_required');
                     }
 
                     if (pin.length != 4) {
-                      return isArabic
-                          ? 'رمز PIN يجب أن يكون 4 أرقام'
-                          : 'PIN must be 4 digits';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('pin_must_be_4_digits');
                     }
 
                     return null;
@@ -223,13 +229,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     setState(() => _obscureNewPin = !_obscureNewPin);
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildPasswordField(
                   controller: _confirmPinController,
-                  label: isArabic ? 'تأكيد رمز PIN الجديد' : 'Confirm new PIN',
-                  hint: isArabic ? 'أعد إدخال 4 أرقام' : 'Re-enter 4 digits',
+                  label: AppLocalizations.of(
+                    context,
+                  ).translate('confirm_new_pin_label'),
+                  hint: AppLocalizations.of(
+                    context,
+                  ).translate('re_enter_4_digits'),
                   isObscure: _obscureConfirmPin,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -242,15 +250,15 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     final pin = value?.trim() ?? '';
 
                     if (pin.isEmpty) {
-                      return isArabic
-                          ? 'تأكيد رمز PIN مطلوب'
-                          : 'PIN confirmation is required';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('confirm_pin_required');
                     }
 
                     if (pin.length != 4) {
-                      return isArabic
-                          ? 'تأكيد رمز PIN يجب أن يكون 4 أرقام'
-                          : 'PIN confirmation must be 4 digits';
+                      return AppLocalizations.of(
+                        context,
+                      ).translate('confirm_pin_must_be_4_digits');
                     }
 
                     return null;
@@ -259,9 +267,7 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                     setState(() => _obscureConfirmPin = !_obscureConfirmPin);
                   },
                 ),
-
                 const SizedBox(height: 28),
-
                 Obx(() {
                   final isLoading = _changePinController.isLoading.value;
 
@@ -286,9 +292,11 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'حفظ رمز PIN الجديد',
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.of(
+                              context,
+                            ).translate('save_new_pin_btn'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -343,7 +351,7 @@ class _ChangeWalletPinPageState extends State<ChangeWalletPinPage> {
             hintText: hint,
             hintStyle: TextStyle(
               color: isDarkMode
-                  ? AppTheme.textSecondary.withOpacity(0.4)
+                  ? AppTheme.textSecondary.withValues(alpha: 0.4)
                   : AppTheme.textLight,
               fontSize: 13,
             ),

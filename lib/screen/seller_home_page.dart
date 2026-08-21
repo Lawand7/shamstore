@@ -531,7 +531,9 @@ class _SellerHomePageState extends State<SellerHomePage> {
                         Expanded(
                           child: Text(
                             product.governorate.isNotEmpty
-                                ? product.governorate
+                                ? AppLocalizations.of(
+                                    context,
+                                  ).translate(product.governorate)
                                 : AppLocalizations.of(
                                     context,
                                   ).translate('not_available'),
@@ -556,7 +558,7 @@ class _SellerHomePageState extends State<SellerHomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${product.quantity} ${AppLocalizations.of(context).translate('available_quantity')}',
+                          '${product.quantity} ${AppLocalizations.of(context).translate('available_quantity_short')}',
                           style: const TextStyle(
                             fontSize: 10,
                             color: Colors.orange,

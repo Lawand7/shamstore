@@ -409,12 +409,14 @@ class _MyAdsPageState extends State<MyAdsPage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDarkMode
-                    ? AppTheme.inputFieldBg.withOpacity(0.5)
+                    ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
                     : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+                  color: Colors.black.withValues(
+                    alpha: isDarkMode ? 0.15 : 0.04,
+                  ),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -428,7 +430,9 @@ class _MyAdsPageState extends State<MyAdsPage> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: adColor.withOpacity(isDarkMode ? 0.18 : 0.1),
+                        color: adColor.withValues(
+                          alpha: isDarkMode ? 0.18 : 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -438,7 +442,6 @@ class _MyAdsPageState extends State<MyAdsPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-
                     Expanded(
                       child: Column(
                         crossAxisAlignment: _isArabic()
@@ -516,7 +519,6 @@ class _MyAdsPageState extends State<MyAdsPage> {
                   color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
                 ),
                 const SizedBox(height: 8),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -553,9 +555,9 @@ class _MyAdsPageState extends State<MyAdsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [

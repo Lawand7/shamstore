@@ -221,7 +221,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 30),
-
               Text(
                 AppLocalizations.of(context).translate('Reset Password Header'),
                 style: TextStyle(
@@ -230,9 +229,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   color: activePrimary,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
                 'أدخل رمز التحقق المرسل إلى:\n$_email',
                 textAlign: TextAlign.center,
@@ -242,9 +239,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   height: 1.5,
                 ),
               ),
-
               const SizedBox(height: 30),
-
               Align(
                 alignment: isArabic
                     ? Alignment.centerRight
@@ -265,11 +260,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 ),
               ),
-
               _buildOtpBoxes(isDarkMode, activePrimary),
-
               const SizedBox(height: 12),
-
               Align(
                 alignment: isArabic
                     ? Alignment.centerLeft
@@ -299,9 +291,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   );
                 }),
               ),
-
               const SizedBox(height: 18),
-
               _buildPasswordLabel(
                 text: AppLocalizations.of(
                   context,
@@ -309,7 +299,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 isArabic: isArabic,
                 activePrimary: activePrimary,
               ),
-
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -330,9 +319,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   },
                 ),
               ),
-
               const SizedBox(height: 20),
-
               _buildPasswordLabel(
                 text: AppLocalizations.of(
                   context,
@@ -340,7 +327,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 isArabic: isArabic,
                 activePrimary: activePrimary,
               ),
-
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
@@ -361,9 +347,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   },
                 ),
               ),
-
               const SizedBox(height: 35),
-
               Obx(() {
                 final isLoading =
                     _forgotPasswordController.isResettingPassword.value;
@@ -404,7 +388,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 );
               }),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -508,7 +491,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       hintText: hint,
       hintStyle: TextStyle(
         color: isDarkMode
-            ? AppTheme.textSecondary.withOpacity(0.5)
+            ? AppTheme.textSecondary.withValues(alpha: 0.5)
             : Colors.black26,
         fontSize: 13,
       ),

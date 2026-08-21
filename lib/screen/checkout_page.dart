@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/features/orders/controllers/order_controller.dart';
+import 'package:shamstore/features/notifications/controllers/notifications_controller.dart';
 import 'package:shamstore/screen/notifications_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
@@ -20,16 +21,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _phoneController = TextEditingController();
-
   final TextEditingController _addressController = TextEditingController();
 
   final OrderController _orderController = OrderController();
+  late final NotificationsController _notificationsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsController = Get.isRegistered<NotificationsController>()
+        ? Get.find<NotificationsController>()
+        : Get.put(NotificationsController());
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  bool _isArabic() {
+    return Localizations.localeOf(context).languageCode == 'ar';
   }
 
   @override
@@ -60,15 +73,58 @@ class _CheckoutPageState extends State<CheckoutPage> {
           },
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: AppTheme.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage()),
-              );
-            },
-          ),
+          Obx(() {
+            final int unreadCount = _notificationsController.unreadCount;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.notifications_none,
+                    color: AppTheme.white,
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsPage(),
+                      ),
+                    );
+                    if (mounted) {
+                      await _notificationsController.refreshNotifications();
+                    }
+                  },
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: const BoxDecoration(
+                        color: Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
         ],
       ),
       body: SafeArea(
@@ -81,7 +137,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildDeliveryForm(context, isDarkMode),
                   const SizedBox(height: 14),
@@ -119,7 +175,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: _isArabic()
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context).translate('Delivery Details'),
@@ -208,7 +266,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             controller: _addressController,
             maxLines: 2,
             textInputAction: TextInputAction.done,
-            textAlign: TextAlign.right,
+            textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 13,
@@ -291,7 +349,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: _isArabic()
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context).translate('Order Summary'),
@@ -307,7 +367,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              if (!_isArabic())
+                Expanded(
+                  child: Text(
+                    productName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+              if (!_isArabic()) const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   '${_formatPrice(price)} '
@@ -317,21 +392,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     fontWeight: FontWeight.bold,
                     color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
                   ),
+                  textAlign: _isArabic() ? TextAlign.left : TextAlign.right,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  productName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDarkMode
-                        ? AppTheme.textPrimary
-                        : AppTheme.textDark,
+              if (_isArabic()) const SizedBox(width: 12),
+              if (_isArabic())
+                Expanded(
+                  child: Text(
+                    productName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
+                    ),
+                    textAlign: TextAlign.right,
                   ),
-                  textAlign: TextAlign.right,
                 ),
-              ),
             ],
           ),
 
@@ -340,6 +417,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              if (!_isArabic())
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  ).translate('quantity_label_short'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDarkMode
+                        ? AppTheme.textSecondary
+                        : AppTheme.textGrey,
+                  ),
+                ),
               Text(
                 quantity.toString(),
                 style: TextStyle(
@@ -348,15 +437,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
                 ),
               ),
-              Text(
-                'الكمية',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDarkMode
-                      ? AppTheme.textSecondary
-                      : AppTheme.textGrey,
+              if (_isArabic())
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  ).translate('quantity_label_short'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDarkMode
+                        ? AppTheme.textSecondary
+                        : AppTheme.textGrey,
+                  ),
                 ),
-              ),
             ],
           ),
 
@@ -365,6 +457,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              if (!_isArabic())
+                Text(
+                  availableQuantity > 0
+                      ? AppLocalizations.of(
+                          context,
+                        ).translate('available_quantity_short')
+                      : AppLocalizations.of(context).translate('out_of_stock'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: stockIsValid
+                        ? (isDarkMode
+                              ? AppTheme.textSecondary
+                              : AppTheme.textGrey)
+                        : Colors.red,
+                    fontWeight: stockIsValid
+                        ? FontWeight.normal
+                        : FontWeight.w700,
+                  ),
+                ),
               Text(
                 availableQuantity.toString(),
                 style: TextStyle(
@@ -375,20 +486,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       : Colors.red,
                 ),
               ),
-              Text(
-                availableQuantity > 0 ? 'الكمية المتوفرة' : 'نفد المخزون',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: stockIsValid
-                      ? (isDarkMode
-                            ? AppTheme.textSecondary
-                            : AppTheme.textGrey)
-                      : Colors.red,
-                  fontWeight: stockIsValid
-                      ? FontWeight.normal
-                      : FontWeight.w700,
+              if (_isArabic())
+                Text(
+                  availableQuantity > 0
+                      ? AppLocalizations.of(
+                          context,
+                        ).translate('available_quantity_short')
+                      : AppLocalizations.of(context).translate('out_of_stock'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: stockIsValid
+                        ? (isDarkMode
+                              ? AppTheme.textSecondary
+                              : AppTheme.textGrey)
+                        : Colors.red,
+                    fontWeight: stockIsValid
+                        ? FontWeight.normal
+                        : FontWeight.w700,
+                  ),
                 ),
-              ),
             ],
           ),
 
@@ -404,9 +520,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
               child: Text(
                 availableQuantity <= 0
-                    ? 'لا يمكن متابعة الطلب لأن المنتج غير متوفر حالياً.'
-                    : 'الكمية المطلوبة $quantity بينما المتوفر $availableQuantity فقط.',
-                textAlign: TextAlign.right,
+                    ? AppLocalizations.of(
+                        context,
+                      ).translate('error_cannot_proceed_unavailable')
+                    : AppLocalizations.of(context)
+                          .translate('error_requested_qty_exceeds')
+                          .replaceAll('{req}', quantity.toString())
+                          .replaceAll('{avail}', availableQuantity.toString()),
+                textAlign: _isArabic() ? TextAlign.right : TextAlign.left,
                 style: const TextStyle(
                   color: Colors.red,
                   fontSize: 12,
@@ -426,6 +547,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                if (!_isArabic())
+                  Text(
+                    AppLocalizations.of(context).translate('total_label_short'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
+                    ),
+                  ),
                 Text(
                   '${_formatPrice(_calculateTotal())} '
                   '${AppLocalizations.of(context).translate('SP')}',
@@ -435,16 +567,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
                   ),
                 ),
-                Text(
-                  'الإجمالي',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode
-                        ? AppTheme.textPrimary
-                        : AppTheme.textDark,
+                if (_isArabic())
+                  Text(
+                    AppLocalizations.of(context).translate('total_label_short'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode
+                          ? AppTheme.textPrimary
+                          : AppTheme.textDark,
+                    ),
                   ),
-                ),
               ],
             ),
           ],
@@ -515,31 +648,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final int availableQuantity = _extractAvailableQuantity();
 
     if (!_extractIsActive()) {
-      _showErrorMessage('هذا المنتج غير متاح للبيع حالياً.');
+      _showErrorMessage(
+        AppLocalizations.of(context).translate('error_product_not_for_sale'),
+      );
       return;
     }
 
     if (availableQuantity <= 0) {
-      _showErrorMessage('نفدت كمية هذا المنتج.');
+      _showErrorMessage(
+        AppLocalizations.of(context).translate('product_out_of_stock'),
+      );
       return;
     }
 
     if (quantity > availableQuantity) {
       _showErrorMessage(
-        'الكمية المطلوبة $quantity بينما المتوفر $availableQuantity فقط.',
+        AppLocalizations.of(context)
+            .translate('error_requested_qty_exceeds')
+            .replaceAll('{req}', quantity.toString())
+            .replaceAll('{avail}', availableQuantity.toString()),
       );
       return;
     }
 
     if (productId <= 0) {
       _showErrorMessage(
-        'تعذر تحديد رقم المنتج. بيانات المنتج المرسلة إلى صفحة الدفع غير صحيحة.',
+        AppLocalizations.of(context).translate('error_invalid_product_data'),
       );
       return;
     }
 
     if (quantity <= 0) {
-      _showErrorMessage('الكمية المطلوبة غير صحيحة.');
+      _showErrorMessage(
+        AppLocalizations.of(context).translate('error_invalid_quantity'),
+      );
       return;
     }
 
@@ -556,13 +698,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     if (!success) {
       _showErrorMessage(
-        _orderController.errorMessage.value ?? 'فشل إنشاء الطلب',
+        _orderController.errorMessage.value ??
+            AppLocalizations.of(context).translate('error_create_order_failed'),
       );
       return;
     }
 
     final String successMessage =
-        _orderController.lastOrder.value?.message ?? 'تم إنشاء الطلب بنجاح';
+        _orderController.lastOrder.value?.message ??
+        AppLocalizations.of(context).translate('success_order_created');
 
     await _showSuccessDialog(successMessage);
 
@@ -586,7 +730,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               const Icon(Icons.check_circle, color: Colors.green),
               const SizedBox(width: 10),
-              Expanded(child: Text(_text('تم إنشاء الطلب', 'Order created'))),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context).translate('order_created_title'),
+                ),
+              ),
             ],
           ),
           content: Text(message),
@@ -595,7 +743,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: Text(_text('موافق', 'OK')),
+              child: Text(AppLocalizations.of(context).translate('ok_btn')),
             ),
           ],
         );
@@ -615,13 +763,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final String phone = value?.trim() ?? '';
 
     if (phone.isEmpty) {
-      return _text('يرجى إدخال رقم الهاتف', 'Please enter the phone number');
+      return AppLocalizations.of(context).translate('error_phone_required');
     }
 
     final String digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (digitsOnly.length < 8) {
-      return _text('رقم الهاتف غير صحيح', 'Please enter a valid phone number');
+      return AppLocalizations.of(context).translate('error_phone_invalid');
     }
 
     return null;
@@ -631,17 +779,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final String address = value?.trim() ?? '';
 
     if (address.isEmpty) {
-      return _text(
-        'يرجى إدخال عنوان التوصيل',
-        'Please enter the delivery address',
-      );
+      return AppLocalizations.of(context).translate('error_address_required');
     }
 
     if (address.length < 5) {
-      return _text(
-        'عنوان التوصيل قصير جداً',
-        'The delivery address is too short',
-      );
+      return AppLocalizations.of(context).translate('error_address_short');
     }
 
     return null;
@@ -753,7 +895,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
     }
 
-    return _text('المنتج', 'Product');
+    return AppLocalizations.of(context).translate('default_product_name');
   }
 
   dynamic _extractProductPrice() {
@@ -829,12 +971,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
 
     return double.tryParse(value.toString());
-  }
-
-  String _text(String arabic, String english) {
-    return Localizations.localeOf(context).languageCode == 'ar'
-        ? arabic
-        : english;
   }
 
   TextAlign _textInputLeftRight() {

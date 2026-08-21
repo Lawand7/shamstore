@@ -126,7 +126,6 @@ class _SupportPageState extends State<SupportPage> {
               ),
             ),
             const SizedBox(height: 8),
-
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
@@ -175,7 +174,6 @@ class _SupportPageState extends State<SupportPage> {
               ),
             ),
             const SizedBox(height: 20),
-
             Text(
               localization.translate('issue_details_label'),
               style: TextStyle(
@@ -185,7 +183,6 @@ class _SupportPageState extends State<SupportPage> {
               ),
             ),
             const SizedBox(height: 8),
-
             TextField(
               controller: _messageController,
               maxLines: 6,
@@ -199,7 +196,7 @@ class _SupportPageState extends State<SupportPage> {
                 hintText: localization.translate('hint_support_msg'),
                 hintStyle: TextStyle(
                   color: isDarkMode
-                      ? AppTheme.textSecondary.withOpacity(0.5)
+                      ? AppTheme.textSecondary.withValues(alpha: 0.5)
                       : AppTheme.textLight,
                   fontSize: 12,
                 ),
@@ -232,7 +229,6 @@ class _SupportPageState extends State<SupportPage> {
               ),
             ),
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -282,11 +278,7 @@ class _SupportPageState extends State<SupportPage> {
                         );
                       },
                 icon: const Icon(Icons.history_outlined, size: 18),
-                label: Text(
-                  Localizations.localeOf(context).languageCode == 'ar'
-                      ? 'عرض طلباتي'
-                      : 'View my requests',
-                ),
+                label: Text(localization.translate('view_my_requests')),
               ),
             ),
           ],

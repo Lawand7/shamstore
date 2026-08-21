@@ -29,6 +29,13 @@ class _AddProductPageState extends State<AddProductPage> {
   File? _selectedImageFile;
   int? _selectedCategoryId;
   String? _selectedGovernorate;
+  String? _selectedStatus;
+
+  // تم تغيير label إلى labelKey لدعم الترجمة
+  final List<Map<String, String>> _productStatuses = const [
+    {'value': 'new', 'labelKey': 'status_new'},
+    {'value': 'used', 'labelKey': 'status_used'},
+  ];
 
   final List<Map<String, dynamic>> _categories = const [
     {'id': 1, 'name': 'Electronics'},
@@ -94,7 +101,10 @@ class _AddProductPageState extends State<AddProductPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      AppFeedback.error(context, 'تعذر اختيار الصورة');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_pick_image'),
+      );
     }
   }
 
@@ -105,32 +115,58 @@ class _AddProductPageState extends State<AddProductPage> {
     final quantityText = _qtyController.text.trim();
 
     if (_selectedImageFile == null) {
-      AppFeedback.error(context, 'يرجى اختيار صورة المنتج');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_image_required'),
+      );
       return;
     }
 
     if (title.isEmpty) {
-      AppFeedback.error(context, 'يرجى إدخال اسم المنتج');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_name_required'),
+      );
       return;
     }
 
     if (priceText.isEmpty) {
-      AppFeedback.error(context, 'يرجى إدخال السعر');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_price_required'),
+      );
       return;
     }
 
     if (quantityText.isEmpty) {
-      AppFeedback.error(context, 'يرجى إدخال الكمية');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_quantity_required'),
+      );
       return;
     }
 
     if (_selectedCategoryId == null) {
-      AppFeedback.error(context, 'يرجى اختيار التصنيف');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_category_required'),
+      );
+      return;
+    }
+
+    if (_selectedStatus == null) {
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_status_required'),
+      );
       return;
     }
 
     if (_selectedGovernorate == null || _selectedGovernorate!.trim().isEmpty) {
-      AppFeedback.error(context, 'يرجى اختيار المحافظة');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_gov_required'),
+      );
       return;
     }
 
@@ -138,12 +174,18 @@ class _AddProductPageState extends State<AddProductPage> {
     final quantity = int.tryParse(quantityText);
 
     if (price == null || price < 0) {
-      AppFeedback.error(context, 'السعر غير صالح');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_price'),
+      );
       return;
     }
 
     if (quantity == null || quantity < 0) {
-      AppFeedback.error(context, 'الكمية غير صالحة');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_quantity'),
+      );
       return;
     }
 
@@ -154,6 +196,7 @@ class _AddProductPageState extends State<AddProductPage> {
       quantity: quantity,
       governorate: _selectedGovernorate!,
       categoryId: _selectedCategoryId!,
+      status: _selectedStatus!,
       productImageFile: _selectedImageFile!,
     );
 
@@ -164,12 +207,17 @@ class _AddProductPageState extends State<AddProductPage> {
         context,
         _sellerProductController.createProductErrorMessage.value.isNotEmpty
             ? _sellerProductController.createProductErrorMessage.value
-            : 'حدث خطأ أثناء إضافة المنتج',
+            : AppLocalizations.of(
+                context,
+              ).translate('error_add_product_failed'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'تمت إضافة المنتج بنجاح');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_product_added'),
+    );
 
     Navigator.pop(context, true);
   }
@@ -231,7 +279,7 @@ class _AddProductPageState extends State<AddProductPage> {
         height: 160,
         decoration: BoxDecoration(
           color: _selectedImageFile != null
-              ? activeColor.withOpacity(0.08)
+              ? activeColor.withValues(alpha: 0.08)
               : (isDarkMode ? AppTheme.cardBackground : AppTheme.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -257,17 +305,23 @@ class _AddProductPageState extends State<AddProductPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.55),
+                          color: Colors.black.withValues(alpha: 0.55),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.edit, color: Colors.white, size: 14),
-                            SizedBox(width: 4),
+                            const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              'تغيير',
-                              style: TextStyle(
+                              AppLocalizations.of(
+                                context,
+                              ).translate('change_image_btn'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -285,7 +339,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 children: [
                   Icon(
                     Icons.camera_alt_outlined,
-                    color: activeColor.withOpacity(0.6),
+                    color: activeColor.withValues(alpha: 0.6),
                     size: 38,
                   ),
                   const SizedBox(height: 8),
@@ -322,7 +376,7 @@ class _AddProductPageState extends State<AddProductPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -367,6 +421,8 @@ class _AddProductPageState extends State<AddProductPage> {
           ),
           const SizedBox(height: 12),
           _buildCategoryDropdown(isDarkMode),
+          const SizedBox(height: 12),
+          _buildStatusDropdown(isDarkMode),
           const SizedBox(height: 12),
           _buildGovernorateDropdown(isDarkMode),
           const SizedBox(height: 12),
@@ -446,6 +502,87 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
+  Widget _buildStatusDropdown(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          AppLocalizations.of(context).translate('product_status_label'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedStatus,
+          dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
+          hint: Text(
+            AppLocalizations.of(context).translate('product_status_hint'),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+            ),
+          ),
+          style: TextStyle(
+            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+            fontSize: 12,
+          ),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              Icons.new_releases_outlined,
+              color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
+              size: 18,
+            ),
+            filled: true,
+            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: isDarkMode
+                  ? BorderSide.none
+                  : const BorderSide(color: AppTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
+                width: 1.5,
+              ),
+            ),
+          ),
+          items: _productStatuses.map((status) {
+            return DropdownMenuItem<String>(
+              value: status['value'],
+              child: Text(
+                AppLocalizations.of(context).translate(status['labelKey']!),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedStatus = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategoryDropdown(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -460,7 +597,7 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<int>(
-          value: _selectedCategoryId,
+          initialValue: _selectedCategoryId,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Category')}',
@@ -544,7 +681,7 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: _selectedGovernorate,
+          initialValue: _selectedGovernorate,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             '${AppLocalizations.of(context).translate('Select')} ${AppLocalizations.of(context).translate('Governorate')}',
@@ -612,59 +749,66 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Widget _buildDescField(bool isDarkMode) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          AppLocalizations.of(context).translate('Description'),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _descController,
-          maxLines: 3,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
-            fontSize: 13,
-          ),
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(
-              context,
-            ).translate('Write a description for the product...'),
-            hintStyle: TextStyle(
-              color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            AppLocalizations.of(context).translate('Description'),
+            style: TextStyle(
               fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
             ),
-            filled: true,
-            fillColor: isDarkMode ? AppTheme.inputFieldBg : AppTheme.background,
-            contentPadding: const EdgeInsets.all(12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _descController,
+            maxLines: 3,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
+              fontSize: 13,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: isDarkMode
-                  ? BorderSide.none
-                  : const BorderSide(color: AppTheme.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: isDarkMode ? AppTheme.selectedBorder : AppTheme.primary,
-                width: 1.5,
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(
+                context,
+              ).translate('Write a description for the product...'),
+              hintStyle: TextStyle(
+                color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
+                fontSize: 12,
+              ),
+              filled: true,
+              fillColor: isDarkMode
+                  ? AppTheme.inputFieldBg
+                  : AppTheme.background,
+              contentPadding: const EdgeInsets.all(12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: isDarkMode
+                    ? BorderSide.none
+                    : const BorderSide(color: AppTheme.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: isDarkMode
+                    ? BorderSide.none
+                    : const BorderSide(color: AppTheme.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isDarkMode
+                      ? AppTheme.selectedBorder
+                      : AppTheme.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -98,7 +98,10 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
     }
 
     if (_pin.length != _pinLength) {
-      AppFeedback.error(context, 'يجب أن يتكون رمز PIN من أربعة أرقام');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_pin_4_digits'),
+      );
       return;
     }
 
@@ -118,7 +121,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
         context,
         errorMessage.isNotEmpty
             ? errorMessage
-            : 'تعذر التحقق من رمز PIN. حاول مرة أخرى',
+            : AppLocalizations.of(context).translate('error_verify_pin_failed'),
       );
 
       if (sessionExpired) {
@@ -170,7 +173,6 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
         children: [
           _buildHeader(isDarkMode),
           const Spacer(),
-
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
@@ -191,7 +193,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
                       color: isFilled
                           ? activeColor
                           : isDarkMode
-                          ? AppTheme.textSecondary.withOpacity(0.4)
+                          ? AppTheme.textSecondary.withValues(alpha: 0.4)
                           : AppTheme.border,
                       width: 2,
                     ),
@@ -200,13 +202,11 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
               }),
             ),
           ),
-
           const SizedBox(height: 8),
-
           TextButton(
             onPressed: _goToChangeWalletPinPage,
             child: Text(
-              'هل نسيت رمز PIN؟',
+              AppLocalizations.of(context).translate('forgot_pin_link'),
               style: TextStyle(
                 color: activeColor,
                 fontSize: 14,
@@ -214,9 +214,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
               ),
             ),
           ),
-
           const Spacer(),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             decoration: BoxDecoration(
@@ -228,7 +226,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
               boxShadow: isDarkMode
                   ? [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, -2),
                       ),
@@ -302,7 +300,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -324,9 +322,11 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: const Icon(
                       Icons.lock_outline_rounded,
@@ -352,7 +352,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
                     ).translate('Enter PIN Description'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppTheme.white.withOpacity(0.8),
+                      color: AppTheme.white.withValues(alpha: 0.8),
                       fontSize: 12,
                       height: 1.4,
                     ),
@@ -394,7 +394,7 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
         decoration: BoxDecoration(
           color: isDarkMode
               ? AppTheme.inputFieldBg
-              : AppTheme.background.withOpacity(0.5),
+              : AppTheme.background.withValues(alpha: 0.5),
           shape: BoxShape.circle,
         ),
         child: Center(

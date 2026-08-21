@@ -7,7 +7,7 @@ import 'package:shamstore/features/customer/controllers/customer_controller.dart
 import 'package:shamstore/features/products/controllers/product_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/category_products.dart';
-import 'package:shamstore/screen/product_details_Page.dart';
+import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -33,6 +33,7 @@ class _SearchPageState extends State<SearchPage> {
   double? _maxPrice;
   String _selectedGovernorate = 'all';
   int? _selectedFilterCategoryId;
+  String? _selectedFilterStatus; // <-- متغير لحفظ حالة المنتج المفلترة
   bool _isFilterMode = false;
 
   final List<String> _governorates = [
@@ -184,6 +185,7 @@ class _SearchPageState extends State<SearchPage> {
 
     int? tempCategoryId = _selectedFilterCategoryId;
     String tempGovernorate = _selectedGovernorate;
+    String? tempStatus = _selectedFilterStatus; // <-- المتغير المؤقت للحالة
 
     showModalBottomSheet(
       context: context,
@@ -298,6 +300,61 @@ class _SearchPageState extends State<SearchPage> {
                     ),
 
                     const SizedBox(height: 20),
+                    // <-- إضافة ويدجت الحالة هنا في الفلتر -->
+                    Text(
+                      'حالة المنتج',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDarkMode
+                            ? AppTheme.textSecondary
+                            : AppTheme.textGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String?>(
+                      initialValue: tempStatus,
+                      dropdownColor: isDarkMode
+                          ? AppTheme.cardBackground
+                          : Colors.white,
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? AppTheme.textPrimary
+                            : AppTheme.textDark,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: isDarkMode
+                            ? AppTheme.inputFieldBg
+                            : AppTheme.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('الكل'),
+                        ),
+                        DropdownMenuItem<String?>(
+                          value: 'new',
+                          child: Text('جديد'),
+                        ),
+                        DropdownMenuItem<String?>(
+                          value: 'used',
+                          child: Text('مستعمل'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempStatus = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
                     Text(
                       AppLocalizations.of(
                         context,
@@ -396,6 +453,8 @@ class _SearchPageState extends State<SearchPage> {
                                 _maxPrice = null;
                                 _selectedGovernorate = 'all';
                                 _selectedFilterCategoryId = null;
+                                _selectedFilterStatus =
+                                    null; // <-- تصفير الحالة هنا
                                 _isFilterMode = false;
                               });
 
@@ -450,13 +509,17 @@ class _SearchPageState extends State<SearchPage> {
                               final hasFilter =
                                   tempCategoryId != null ||
                                   (minPrice != null && maxPrice != null) ||
-                                  tempGovernorate != 'all';
+                                  tempGovernorate != 'all' ||
+                                  tempStatus !=
+                                      null; // <-- إضافة الحالة لشرط الفلترة
 
                               setState(() {
                                 _minPrice = minPrice;
                                 _maxPrice = maxPrice;
                                 _selectedGovernorate = tempGovernorate;
                                 _selectedFilterCategoryId = tempCategoryId;
+                                _selectedFilterStatus =
+                                    tempStatus; // <-- حفظ الحالة المفلترة
                                 _isFilterMode = hasFilter;
                                 _searchQuery = '';
                               });
@@ -478,6 +541,7 @@ class _SearchPageState extends State<SearchPage> {
                                 governorate: tempGovernorate == 'all'
                                     ? null
                                     : tempGovernorate,
+                                status: tempStatus, // <-- تمرير الحالة للمتحكم
                                 refresh: true,
                               );
                             },
@@ -575,6 +639,7 @@ class _SearchPageState extends State<SearchPage> {
         governorate: _selectedGovernorate == 'all'
             ? null
             : _selectedGovernorate,
+        status: _selectedFilterStatus, // <-- تمرير الحالة
         refresh: true,
       );
     }
@@ -722,6 +787,7 @@ class _SearchPageState extends State<SearchPage> {
       'governorate': product.governorate,
       'price': _formatPrice(product.price),
       'quantity': product.quantity,
+      'status': product.status, // <-- تم تمرير الحالة للعمل مع صفحة التفاصيل
       'product_image_url': product.productImageUrl,
       'imageUrl': product.fullImageUrl,
       'product_url': product.productUrl,
@@ -865,6 +931,7 @@ class _SearchPageState extends State<SearchPage> {
                       _maxPrice = null;
                       _selectedGovernorate = 'all';
                       _selectedFilterCategoryId = null;
+                      _selectedFilterStatus = null; // <-- التصفير هنا
                       _isFilterMode = false;
                     });
 

@@ -10,6 +10,7 @@ import 'package:shamstore/features/seller/models/seller_order_model.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/localized_content.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 
 class SellerOrdersPage extends StatefulWidget {
   const SellerOrdersPage({super.key});
@@ -37,6 +38,10 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     });
   }
 
+  bool _isArabic() {
+    return Localizations.localeOf(context).languageCode == 'ar';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -54,7 +59,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
         : AppTheme.primary;
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: _isArabic() ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: backgroundColor,
         appBar: AppBar(
@@ -63,7 +68,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
           elevation: 0,
           centerTitle: true,
           title: Text(
-            'طلبات متجري',
+            AppLocalizations.of(context).translate('seller_orders_title'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 18,
@@ -71,10 +76,12 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             ),
           ),
           leading: IconButton(
-            tooltip: 'رجوع',
+            tooltip: AppLocalizations.of(context).translate('tooltip_back'),
             onPressed: () => Navigator.pop(context),
             icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
+              _isArabic()
+                  ? Icons.arrow_back_ios_new_rounded
+                  : Icons.arrow_back_ios_rounded,
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               size: 20,
             ),
@@ -82,7 +89,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
           actions: [
             Obx(
               () => IconButton(
-                tooltip: 'تحديث',
+                tooltip: AppLocalizations.of(
+                  context,
+                ).translate('tooltip_refresh'),
                 onPressed: _controller.isLoading.value
                     ? null
                     : _controller.refreshOrders,
@@ -141,7 +150,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
           children: [
             Expanded(
               child: _buildTabButton(
-                title: _text('قيد التنفيذ', 'In progress'),
+                title: AppLocalizations.of(
+                  context,
+                ).translate('tab_in_progress'),
                 icon: Icons.pending_actions_rounded,
                 status: 'pending',
                 selectedStatus: selectedStatus,
@@ -152,7 +163,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             const SizedBox(width: 6),
             Expanded(
               child: _buildTabButton(
-                title: _text('مكتملة', 'Completed'),
+                title: AppLocalizations.of(context).translate('tab_completed'),
                 icon: Icons.task_alt_rounded,
                 status: 'complete',
                 selectedStatus: selectedStatus,
@@ -268,7 +279,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
               child: FilledButton.icon(
                 onPressed: _controller.refreshOrders,
                 icon: const Icon(Icons.refresh_rounded),
-                label: Text(_text('إعادة المحاولة', 'Try again')),
+                label: Text(AppLocalizations.of(context).translate('retry')),
                 style: FilledButton.styleFrom(backgroundColor: primaryColor),
               ),
             ),
@@ -299,8 +310,12 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             const SizedBox(height: 18),
             Text(
               pendingSelected
-                  ? 'لا توجد طلبات قيد التنفيذ حالياً'
-                  : 'لا توجد طلبات مكتملة حالياً',
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('empty_pending_orders_title')
+                  : AppLocalizations.of(
+                      context,
+                    ).translate('empty_completed_orders_title'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
@@ -311,8 +326,12 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             const SizedBox(height: 8),
             Text(
               pendingSelected
-                  ? 'ستظهر هنا الطلبات الجديدة التي يرسلها المشترون.'
-                  : 'ستظهر هنا الطلبات بعد اكتمالها وتأكيدها.',
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('empty_pending_orders_desc')
+                  : AppLocalizations.of(
+                      context,
+                    ).translate('empty_completed_orders_desc'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
@@ -378,7 +397,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
       raw['product_name'],
       raw['name'],
       raw['title'],
-    ], fallback: 'منتج غير معروف');
+    ], fallback: AppLocalizations.of(context).translate('unknown_product'));
 
     final String customerName = _firstText([
       order.customerName,
@@ -563,10 +582,16 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                         const SizedBox(width: 5),
                         Text(
                           isCompleted
-                              ? 'مكتمل'
+                              ? AppLocalizations.of(
+                                  context,
+                                ).translate('status_completed_badge')
                               : isShipped
-                              ? 'تم الشحن'
-                              : 'قيد التنفيذ',
+                              ? AppLocalizations.of(
+                                  context,
+                                ).translate('status_shipped_badge')
+                              : AppLocalizations.of(
+                                  context,
+                                ).translate('status_pending_badge'),
                           style: TextStyle(
                             color: isCompleted
                                 ? AppTheme.success
@@ -582,7 +607,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                   ),
                   const Spacer(),
                   Text(
-                    'طلب #${order.id}',
+                    '${AppLocalizations.of(context).translate('order_number')}${order.id}',
                     style: TextStyle(
                       color: secondaryTextColor,
                       fontSize: 12,
@@ -621,22 +646,46 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                               ),
                             ),
                             const SizedBox(height: 7),
-                            Text(
-                              'الكمية: $quantity',
-                              style: TextStyle(
-                                color: secondaryTextColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  '${AppLocalizations.of(context).translate('quantity_label')} ',
+                                  style: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '$quantity',
+                                  style: TextStyle(
+                                    color: mainTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 5),
-                            Text(
-                              'الإجمالي: ${_formatPrice(totalPrice)} ل.س',
-                              style: TextStyle(
-                                color: primaryColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  '${AppLocalizations.of(context).translate('total_price_label')} ',
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                Text(
+                                  '${_formatPrice(totalPrice)} ${AppLocalizations.of(context).translate('currency_sp')}',
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -651,7 +700,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                   const SizedBox(height: 13),
                   _buildInfoRow(
                     icon: Icons.person_outline_rounded,
-                    title: _text('العميل', 'Customer'),
+                    title: AppLocalizations.of(
+                      context,
+                    ).translate('customer_label'),
                     value: customerName,
                     isDarkMode: isDarkMode,
                   ),
@@ -659,7 +710,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.phone_outlined,
-                      title: _text('الهاتف', 'Phone'),
+                      title: AppLocalizations.of(
+                        context,
+                      ).translate('phone_label'),
                       value: phone,
                       isDarkMode: isDarkMode,
                     ),
@@ -668,7 +721,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.location_on_outlined,
-                      title: _text('العنوان', 'Address'),
+                      title: AppLocalizations.of(
+                        context,
+                      ).translate('address_label'),
                       value: [
                         LocalizedContent.value(context, governorate),
                         address,
@@ -680,7 +735,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     const SizedBox(height: 9),
                     _buildInfoRow(
                       icon: Icons.calendar_today_outlined,
-                      title: _text('تاريخ الطلب', 'Order date'),
+                      title: AppLocalizations.of(
+                        context,
+                      ).translate('order_date_label'),
                       value: createdAt,
                       isDarkMode: isDarkMode,
                     ),
@@ -695,7 +752,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                     ),
                     const SizedBox(height: 13),
                     Text(
-                      'معلومات الشحن',
+                      AppLocalizations.of(
+                        context,
+                      ).translate('shipping_info_title'),
                       style: TextStyle(
                         color: mainTextColor,
                         fontSize: 13,
@@ -706,7 +765,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                       const SizedBox(height: 9),
                       _buildInfoRow(
                         icon: Icons.local_shipping_outlined,
-                        title: _text('التاريخ المتوقع', 'Expected date'),
+                        title: AppLocalizations.of(
+                          context,
+                        ).translate('expected_date_label'),
                         value: _formatDate(shippingPeriod),
                         isDarkMode: isDarkMode,
                       ),
@@ -742,7 +803,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                           const SizedBox(width: 9),
                           Expanded(
                             child: Text(
-                              'تم شحن الطلب، وبانتظار تأكيد الاستلام من المشتري.',
+                              AppLocalizations.of(
+                                context,
+                              ).translate('shipped_waiting_msg'),
                               style: TextStyle(
                                 color: mainTextColor,
                                 fontSize: 12,
@@ -774,7 +837,13 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                   )
                                 : const Icon(Icons.close_rounded, size: 19),
                             label: Text(
-                              rejecting ? 'جارٍ الرفض...' : 'رفض الطلب',
+                              rejecting
+                                  ? AppLocalizations.of(
+                                      context,
+                                    ).translate('rejecting_btn')
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).translate('reject_order_btn'),
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.error,
@@ -808,7 +877,13 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                     size: 19,
                                   ),
                             label: Text(
-                              shippingOrder ? 'جارٍ الإرسال...' : 'شحن الطلب',
+                              shippingOrder
+                                  ? AppLocalizations.of(
+                                      context,
+                                    ).translate('shipping_btn')
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).translate('ship_order_btn'),
                             ),
                             style: FilledButton.styleFrom(
                               backgroundColor: primaryColor,
@@ -949,20 +1024,22 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
       context: context,
       builder: (dialogContext) {
         return Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: _isArabic() ? TextDirection.rtl : TextDirection.ltr,
           child: AlertDialog(
             backgroundColor: isDarkMode
                 ? AppTheme.cardBackground
                 : AppTheme.white,
             title: Text(
-              'رفض الطلب',
+              AppLocalizations.of(context).translate('reject_dialog_title'),
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
                 fontWeight: FontWeight.w700,
               ),
             ),
             content: Text(
-              'هل أنت متأكد من رفض الطلب رقم #${order.id}؟ لا يمكن التراجع عن هذه العملية.',
+              AppLocalizations.of(context)
+                  .translate('reject_dialog_msg')
+                  .replaceAll('{id}', order.id.toString()),
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
                 height: 1.5,
@@ -971,7 +1048,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text(_text('إلغاء', 'Cancel')),
+                child: Text(AppLocalizations.of(context).translate('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
@@ -979,7 +1056,11 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                   backgroundColor: AppTheme.error,
                   foregroundColor: Colors.white,
                 ),
-                child: Text(_text('تأكيد الرفض', 'Confirm rejection')),
+                child: Text(
+                  AppLocalizations.of(
+                    context,
+                  ).translate('confirm_rejection_btn'),
+                ),
               ),
             ],
           ),
@@ -997,7 +1078,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
 
     if (success) {
       _showMessage(
-        title: 'تم الرفض',
+        title: AppLocalizations.of(context).translate('rejected_success'),
         message: _controller.lastActionMessage.value,
         isError: false,
       );
@@ -1005,7 +1086,7 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
     }
 
     _showMessage(
-      title: 'فشل رفض الطلب',
+      title: AppLocalizations.of(context).translate('reject_failed'),
       message: _controller.lastActionError.value,
       isError: true,
     );
@@ -1040,9 +1121,11 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                 initialDate: selectedDate ?? now.add(const Duration(days: 1)),
                 firstDate: DateTime(now.year, now.month, now.day),
                 lastDate: now.add(const Duration(days: 365)),
-                helpText: 'اختر التاريخ المتوقع',
-                cancelText: 'إلغاء',
-                confirmText: 'اختيار',
+                helpText: AppLocalizations.of(
+                  context,
+                ).translate('expected_date_label'),
+                cancelText: AppLocalizations.of(context).translate('Cancel'),
+                confirmText: AppLocalizations.of(context).translate('Select'),
               );
 
               if (result == null || !sheetContext.mounted) {
@@ -1081,8 +1164,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                 if (!sheetContext.mounted) return;
 
                 setSheetState(() {
-                  localError =
-                      'تعذر اختيار الصورة. تحقق من صلاحية الوصول للصور.';
+                  localError = AppLocalizations.of(
+                    context,
+                  ).translate('error_image_access');
                 });
               } finally {
                 if (sheetContext.mounted) {
@@ -1098,14 +1182,18 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
 
               if (selectedDate == null) {
                 setSheetState(() {
-                  localError = 'اختر تاريخ الشحن أو التسليم المتوقع';
+                  localError = AppLocalizations.of(
+                    context,
+                  ).translate('error_date_required');
                 });
                 return;
               }
 
               if (selectedImage == null) {
                 setSheetState(() {
-                  localError = 'اختر صورة إثبات الشحن';
+                  localError = AppLocalizations.of(
+                    context,
+                  ).translate('error_image_required');
                 });
                 return;
               }
@@ -1138,7 +1226,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
               if (!mounted) return;
 
               _showMessage(
-                title: 'تم إرسال الشحن',
+                title: AppLocalizations.of(
+                  context,
+                ).translate('shipping_sent_success'),
                 message: _controller.lastActionMessage.value,
                 isError: false,
               );
@@ -1157,7 +1247,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                 : AppTheme.textGrey;
 
             return Directionality(
-              textDirection: TextDirection.rtl,
+              textDirection: _isArabic()
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(sheetContext).size.height * 0.88,
@@ -1209,7 +1301,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'شحن الطلب #${order.id}',
+                                  AppLocalizations.of(context)
+                                      .translate('ship_order_dialog_title')
+                                      .replaceAll('{id}', order.id.toString()),
                                   style: TextStyle(
                                     color: mainTextColor,
                                     fontSize: 17,
@@ -1218,7 +1312,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'أدخل معلومات الشحن بدقة قبل الإرسال.',
+                                  AppLocalizations.of(
+                                    context,
+                                  ).translate('ship_order_dialog_desc'),
                                   style: TextStyle(
                                     color: secondaryTextColor,
                                     fontSize: 12,
@@ -1240,7 +1336,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                       ),
                       const SizedBox(height: 22),
                       Text(
-                        'التاريخ المتوقع',
+                        AppLocalizations.of(
+                          context,
+                        ).translate('expected_date_header'),
                         style: TextStyle(
                           color: mainTextColor,
                           fontSize: 13,
@@ -1280,7 +1378,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                               Expanded(
                                 child: Text(
                                   selectedDate == null
-                                      ? 'اضغط لاختيار التاريخ'
+                                      ? AppLocalizations.of(
+                                          context,
+                                        ).translate('select_date_hint')
                                       : _formatDateForApi(selectedDate!),
                                   style: TextStyle(
                                     color: selectedDate == null
@@ -1301,7 +1401,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'صورة إثبات الشحن',
+                        AppLocalizations.of(
+                          context,
+                        ).translate('shipping_proof_image'),
                         style: TextStyle(
                           color: mainTextColor,
                           fontSize: 13,
@@ -1345,8 +1447,12 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                     const SizedBox(height: 10),
                                     Text(
                                       isPickingImage
-                                          ? 'جارٍ فتح الصور...'
-                                          : 'اختر صورة من الجهاز',
+                                          ? AppLocalizations.of(
+                                              context,
+                                            ).translate('opening_images_msg')
+                                          : AppLocalizations.of(
+                                              context,
+                                            ).translate('choose_image_btn'),
                                       style: TextStyle(
                                         color: mainTextColor,
                                         fontSize: 13,
@@ -1355,7 +1461,9 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
-                                      'يفضل أن تكون الصورة واضحة',
+                                      AppLocalizations.of(
+                                        context,
+                                      ).translate('image_hint_msg'),
                                       style: TextStyle(
                                         color: secondaryTextColor,
                                         fontSize: 11,
@@ -1379,7 +1487,8 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                                     ),
                                     Positioned(
                                       top: 9,
-                                      left: 9,
+                                      left: _isArabic() ? null : 9,
+                                      right: _isArabic() ? 9 : null,
                                       child: Material(
                                         color: Colors.black.withValues(
                                           alpha: 0.65,
@@ -1461,8 +1570,12 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
                             : const Icon(Icons.send_rounded),
                         label: Text(
                           isSubmitting
-                              ? 'جارٍ إرسال معلومات الشحن...'
-                              : 'إرسال معلومات الشحن',
+                              ? AppLocalizations.of(
+                                  context,
+                                ).translate('sending_shipping_info_btn')
+                              : AppLocalizations.of(
+                                  context,
+                                ).translate('send_shipping_info_btn'),
                         ),
                         style: FilledButton.styleFrom(
                           backgroundColor: primaryColor,
@@ -1640,11 +1753,5 @@ class _SellerOrdersPageState extends State<SellerOrdersPage> {
         .replaceFirst(RegExp(r'^storage/'), '');
 
     return '$serverBase/storage/$cleanPath';
-  }
-
-  String _text(String arabic, String english) {
-    return Localizations.localeOf(context).languageCode == 'ar'
-        ? arabic
-        : english;
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
@@ -35,20 +36,29 @@ class ProductDetailsPage extends StatelessWidget {
     final String title = _readString([
       'title',
       'name',
-    ], fallback: 'منتج بدون اسم');
+    ], fallback: AppLocalizations.of(context).translate('unnamed_product'));
 
-    final String description = _readString([
-      'description',
-    ], fallback: 'لا يوجد وصف متوفر لهذا المنتج');
+    final String descriptionRaw = _readString(['description']);
+    final String description = descriptionRaw.isNotEmpty
+        ? descriptionRaw
+        : AppLocalizations.of(context).translate('no_description_available');
 
-    final String governorate = _readString([
-      'governorate',
-      'city',
-    ], fallback: 'غير متوفر');
+    final String governorateRaw = _readString(['governorate', 'city']);
+    final String governorate = governorateRaw.isNotEmpty
+        ? AppLocalizations.of(context).translate(governorateRaw)
+        : AppLocalizations.of(context).translate('not_available');
 
     final String price = _readString(['price'], fallback: '0');
 
     final String quantity = _readString(['quantity'], fallback: '0');
+
+    final String rawStatus = _readString(['status'], fallback: 'new');
+    final String displayStatus = rawStatus.toLowerCase() == 'used'
+        ? AppLocalizations.of(context).translate('status_used')
+        : AppLocalizations.of(context).translate('status_new');
+    final Color statusColor = rawStatus.toLowerCase() == 'used'
+        ? Colors.orange
+        : Colors.green;
 
     final String imageUrl = _readString([
       'imageUrl',
@@ -89,7 +99,37 @@ class ProductDetailsPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            tooltip: 'إبلاغ عن المنتج',
+            tooltip: AppLocalizations.of(
+              context,
+            ).translate('copy_link_tooltip'),
+            icon: const Icon(Icons.copy_rounded, color: AppTheme.white),
+            onPressed: () async {
+              final String url = product['product_url']?.toString() ?? '';
+
+              if (url.isNotEmpty) {
+                await Clipboard.setData(ClipboardData(text: url));
+                if (context.mounted) {
+                  AppFeedback.success(
+                    context,
+                    AppLocalizations.of(
+                      context,
+                    ).translate('link_copied_success'),
+                  );
+                }
+              } else {
+                if (context.mounted) {
+                  AppFeedback.error(
+                    context,
+                    AppLocalizations.of(context).translate('error_no_link'),
+                  );
+                }
+              }
+            },
+          ),
+          IconButton(
+            tooltip: AppLocalizations.of(
+              context,
+            ).translate('report_product_tooltip'),
             icon: const Icon(
               Icons.report_problem_outlined,
               color: AppTheme.white,
@@ -126,12 +166,14 @@ class ProductDetailsPage extends StatelessWidget {
               ),
               border: Border.all(
                 color: isDarkMode
-                    ? AppTheme.inputFieldBg.withOpacity(0.5)
+                    ? AppTheme.inputFieldBg.withValues(alpha: 0.5)
                     : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.08),
+                  color: Colors.black.withValues(
+                    alpha: isDarkMode ? 0.2 : 0.08,
+                  ),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -165,6 +207,7 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildMetaRow(
+                  context: context,
                   isArabic: isArabic,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
@@ -182,6 +225,8 @@ class ProductDetailsPage extends StatelessWidget {
                   activePrimary: activePrimary,
                   sellerId: sellerId,
                   quantity: quantity,
+                  statusLabel: displayStatus,
+                  statusColor: statusColor,
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -228,8 +273,8 @@ class ProductDetailsPage extends StatelessWidget {
                             ? AppTheme.selectedBorder
                             : AppTheme.primary,
                         disabledBackgroundColor: isDarkMode
-                            ? AppTheme.selectedBorder.withOpacity(0.5)
-                            : AppTheme.primary.withOpacity(0.5),
+                            ? AppTheme.selectedBorder.withValues(alpha: 0.5)
+                            : AppTheme.primary.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -251,7 +296,7 @@ class ProductDetailsPage extends StatelessWidget {
                             ),
                       label: Text(
                         isAddingThisProduct
-                            ? 'جاري الإضافة...'
+                            ? '...'
                             : AppLocalizations.of(
                                 context,
                               ).translate('Add to Cart Button'),
@@ -278,7 +323,10 @@ class ProductDetailsPage extends StatelessWidget {
     required int productId,
   }) async {
     if (productId <= 0) {
-      AppFeedback.error(context, 'معرّف المنتج غير صالح');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_product_id'),
+      );
       return;
     }
 
@@ -294,12 +342,15 @@ class ProductDetailsPage extends StatelessWidget {
         context,
         customerController.addCartItemErrorMessage.value.isNotEmpty
             ? customerController.addCartItemErrorMessage.value
-            : 'حدث خطأ أثناء إضافة المنتج إلى السلة',
+            : AppLocalizations.of(context).translate('error_add_to_cart'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'تمت إضافة المنتج إلى السلة');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_added_to_cart'),
+    );
   }
 
   Future<void> _showProductReportSheet({
@@ -308,7 +359,10 @@ class ProductDetailsPage extends StatelessWidget {
     required bool isDarkMode,
   }) async {
     if (productId <= 0) {
-      AppFeedback.error(context, 'تعذر تحديد المنتج');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_invalid_product_id'),
+      );
       return;
     }
 
@@ -352,9 +406,11 @@ class ProductDetailsPage extends StatelessWidget {
                               : AppTheme.textGrey,
                         ),
                       ),
-                      const Text(
-                        'الإبلاغ عن المنتج',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        ).translate('report_product_title'),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.red,
@@ -376,7 +432,9 @@ class ProductDetailsPage extends StatelessWidget {
                           : AppTheme.textDark,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'اكتب تفاصيل المشكلة بشكل واضح...',
+                      hintText: AppLocalizations.of(
+                        context,
+                      ).translate('report_problem_hint'),
                       filled: true,
                       fillColor: isDarkMode
                           ? AppTheme.inputFieldBg
@@ -415,7 +473,9 @@ class ProductDetailsPage extends StatelessWidget {
                               if (description.isEmpty) {
                                 AppFeedback.error(
                                   sheetContext,
-                                  'يرجى كتابة تفاصيل المشكلة',
+                                  AppLocalizations.of(
+                                    context,
+                                  ).translate('error_empty_problem_desc'),
                                 );
                                 return;
                               }
@@ -467,9 +527,11 @@ class ProductDetailsPage extends StatelessWidget {
                                 ),
                               ),
                             )
-                          : const Text(
-                              'إرسال البلاغ',
-                              style: TextStyle(
+                          : Text(
+                              AppLocalizations.of(
+                                context,
+                              ).translate('send_report_btn'),
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -497,7 +559,7 @@ class ProductDetailsPage extends StatelessWidget {
         child: Icon(
           Icons.image_outlined,
           size: 110,
-          color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.7),
+          color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.7),
         ),
       );
     }
@@ -511,7 +573,7 @@ class ProductDetailsPage extends StatelessWidget {
           child: Icon(
             Icons.broken_image_outlined,
             size: 95,
-            color: activePrimary.withOpacity(isDarkMode ? 0.85 : 0.7),
+            color: activePrimary.withValues(alpha: isDarkMode ? 0.85 : 0.7),
           ),
         );
       },
@@ -588,6 +650,7 @@ class ProductDetailsPage extends StatelessWidget {
   }
 
   Widget _buildMetaRow({
+    required BuildContext context,
     required bool isArabic,
     required bool isDarkMode,
     required Color activePrimary,
@@ -645,6 +708,7 @@ class ProductDetailsPage extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               _buildSellerRating(
+                context,
                 sellerRatingFuture,
                 isArabic: isArabic,
                 isDarkMode: isDarkMode,
@@ -656,6 +720,7 @@ class ProductDetailsPage extends StatelessWidget {
               const Icon(Icons.star, color: Colors.orange, size: 16),
               const SizedBox(width: 4),
               _buildSellerRating(
+                context,
                 sellerRatingFuture,
                 isArabic: isArabic,
                 isDarkMode: isDarkMode,
@@ -694,6 +759,7 @@ class ProductDetailsPage extends StatelessWidget {
   }
 
   Widget _buildSellerRating(
+    BuildContext context,
     Future<SellerRatingResult> sellerRatingFuture, {
     required bool isArabic,
     required bool isDarkMode,
@@ -707,13 +773,15 @@ class ProductDetailsPage extends StatelessWidget {
           final result = snapshot.data;
 
           if (result?.hasRating == true) {
-            final rating = result!.averageRating!.toStringAsFixed(0);
+            final rating = result!.averageRating!.toStringAsFixed(1);
             final count = result.ratingCount;
 
             if (count > 0) {
-              final countLabel = isArabic
-                  ? (count == 1 ? 'تقييم واحد' : '$count تقييمات')
-                  : (count == 1 ? '1 rating' : '$count ratings');
+              final countLabel = count == 1
+                  ? AppLocalizations.of(context).translate('one_rating')
+                  : AppLocalizations.of(context)
+                        .translate('multiple_ratings')
+                        .replaceAll('{count}', count.toString());
               ratingText = '$rating/5 ($countLabel)';
             } else {
               ratingText = '$rating/5';
@@ -721,7 +789,9 @@ class ProductDetailsPage extends StatelessWidget {
           } else if (result?.errorMessage != null) {
             ratingText = result!.errorMessage!;
           } else {
-            ratingText = isArabic ? 'لا يوجد تقييم بعد' : 'No ratings yet';
+            ratingText = AppLocalizations.of(
+              context,
+            ).translate('no_ratings_yet');
           }
         }
 
@@ -750,8 +820,12 @@ class ProductDetailsPage extends StatelessWidget {
     required Color activePrimary,
     required int sellerId,
     required String quantity,
+    required String statusLabel,
+    required Color statusColor,
   }) {
-    final sellerIdText = sellerId > 0 ? sellerId.toString() : 'غير متوفر';
+    final sellerIdText = sellerId > 0
+        ? sellerId.toString()
+        : AppLocalizations.of(context).translate('not_available');
 
     final quantityWidget = _smallInfoChip(
       icon: Icons.inventory_2_outlined,
@@ -764,23 +838,36 @@ class ProductDetailsPage extends StatelessWidget {
 
     final sellerIdWidget = _smallInfoChip(
       icon: Icons.person_outline,
-      label: 'Seller ID',
+      label: AppLocalizations.of(context).translate('seller_id_label'),
       value: sellerIdText,
       isArabic: isArabic,
       isDarkMode: isDarkMode,
       color: activePrimary,
     );
 
+    final statusWidget = _smallInfoChip(
+      icon: Icons.new_releases_outlined,
+      label: AppLocalizations.of(context).translate('product_status_label'),
+      value: statusLabel,
+      isArabic: isArabic,
+      isDarkMode: isDarkMode,
+      color: statusColor,
+    );
+
     return Row(
       children: isArabic
           ? [
               Expanded(child: sellerIdWidget),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(child: quantityWidget),
+              const SizedBox(width: 6),
+              Expanded(child: statusWidget),
             ]
           : [
+              Expanded(child: statusWidget),
+              const SizedBox(width: 6),
               Expanded(child: quantityWidget),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(child: sellerIdWidget),
             ],
     );
@@ -795,11 +882,13 @@ class ProductDetailsPage extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withOpacity(isDarkMode ? 0.14 : 0.08),
+        color: color.withValues(alpha: isDarkMode ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(isDarkMode ? 0.28 : 0.2)),
+        border: Border.all(
+          color: color.withValues(alpha: isDarkMode ? 0.28 : 0.2),
+        ),
       ),
       child: Row(
         mainAxisAlignment: isArabic
@@ -819,6 +908,7 @@ class ProductDetailsPage extends StatelessWidget {
                               : AppTheme.textGrey,
                           fontSize: 10,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         value,
@@ -829,16 +919,17 @@ class ProductDetailsPage extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Icon(icon, color: color, size: 17),
               ]
             : [
                 Icon(icon, color: color, size: 17),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,6 +942,7 @@ class ProductDetailsPage extends StatelessWidget {
                               : AppTheme.textGrey,
                           fontSize: 10,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         value,
@@ -861,6 +953,7 @@ class ProductDetailsPage extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

@@ -3,10 +3,11 @@ import 'package:get/get.dart';
 
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/customer/repositories/customer_repository.dart';
+import 'package:shamstore/features/notifications/controllers/notifications_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
 import 'package:shamstore/screen/checkout_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
-import 'package:shamstore/screen/product_details_Page.dart';
+import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -21,6 +22,7 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   late final CustomerController _customerController;
+  late final NotificationsController _notificationsController;
 
   final double _deliveryFee = 50;
 
@@ -35,6 +37,10 @@ class _CartPageState extends State<CartPage> {
     _customerController = Get.isRegistered<CustomerController>()
         ? Get.find<CustomerController>()
         : Get.put(CustomerController());
+
+    _notificationsController = Get.isRegistered<NotificationsController>()
+        ? Get.find<NotificationsController>()
+        : Get.put(NotificationsController());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -54,12 +60,18 @@ class _CartPageState extends State<CartPage> {
     final int availableQuantity = _availableQuantity(item);
 
     if (availableQuantity <= 0) {
-      _showError('هذا المنتج غير متوفر حالياً');
+      _showError(
+        AppLocalizations.of(context).translate('error_product_unavailable'),
+      );
       return;
     }
 
     if (item.quantity >= availableQuantity) {
-      _showError('الكمية المتوفرة من هذا المنتج هي $availableQuantity فقط');
+      _showError(
+        AppLocalizations.of(context)
+            .translate('error_max_quantity')
+            .replaceAll('{qty}', availableQuantity.toString()),
+      );
       return;
     }
 
@@ -76,7 +88,7 @@ class _CartPageState extends State<CartPage> {
       _showError(
         _customerController.updateCartItemErrorMessage.value.isNotEmpty
             ? _customerController.updateCartItemErrorMessage.value
-            : 'حدث خطأ أثناء زيادة الكمية',
+            : AppLocalizations.of(context).translate('error_increase_qty'),
       );
     }
   }
@@ -99,7 +111,7 @@ class _CartPageState extends State<CartPage> {
       _showError(
         _customerController.updateCartItemErrorMessage.value.isNotEmpty
             ? _customerController.updateCartItemErrorMessage.value
-            : 'حدث خطأ أثناء إنقاص الكمية',
+            : AppLocalizations.of(context).translate('error_decrease_qty'),
       );
     }
   }
@@ -115,12 +127,15 @@ class _CartPageState extends State<CartPage> {
       _showError(
         _customerController.removeCartItemErrorMessage.value.isNotEmpty
             ? _customerController.removeCartItemErrorMessage.value
-            : 'حدث خطأ أثناء حذف المنتج من السلة',
+            : AppLocalizations.of(context).translate('error_remove_cart_item'),
       );
       return;
     }
 
-    AppFeedback.success(context, 'تم حذف المنتج من السلة');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_remove_cart_item'),
+    );
   }
 
   void _showError(String message) {
@@ -132,23 +147,32 @@ class _CartPageState extends State<CartPage> {
     final int availableQuantity = _availableQuantity(item);
 
     if (product == null) {
-      _showError('تعذر قراءة بيانات المنتج. حدّث السلة ثم أعد المحاولة');
+      _showError(
+        AppLocalizations.of(context).translate('error_read_product_data'),
+      );
       return;
     }
 
     if (!product.isActive) {
-      _showError('هذا المنتج غير متاح للبيع حالياً');
+      _showError(
+        AppLocalizations.of(context).translate('error_product_not_for_sale'),
+      );
       return;
     }
 
     if (availableQuantity <= 0) {
-      _showError('نفدت كمية هذا المنتج');
+      _showError(
+        AppLocalizations.of(context).translate('product_out_of_stock'),
+      );
       return;
     }
 
     if (item.quantity > availableQuantity) {
       _showError(
-        'الكمية المطلوبة ${item.quantity} بينما المتوفر $availableQuantity فقط',
+        AppLocalizations.of(context)
+            .translate('error_requested_qty_exceeds')
+            .replaceAll('{req}', item.quantity.toString())
+            .replaceAll('{avail}', availableQuantity.toString()),
       );
       return;
     }
@@ -174,7 +198,9 @@ class _CartPageState extends State<CartPage> {
       _showError(
         _customerController.cartErrorMessage.value.isNotEmpty
             ? _customerController.cartErrorMessage.value
-            : 'تم إنشاء الطلب، لكن تعذر تحديث السلة تلقائياً',
+            : AppLocalizations.of(
+                context,
+              ).translate('error_cart_refresh_after_order'),
       );
     }
   }
@@ -183,7 +209,9 @@ class _CartPageState extends State<CartPage> {
     final product = item.product;
 
     if (product == null) {
-      _showError('لا يمكن فتح تفاصيل هذا المنتج حالياً');
+      _showError(
+        AppLocalizations.of(context).translate('error_open_product_details'),
+      );
       return;
     }
 
@@ -203,8 +231,12 @@ class _CartPageState extends State<CartPage> {
       'id': product?.id ?? item.productId,
       'seller_id': product?.sellerId ?? 0,
       'category_id': product?.categoryId ?? 0,
-      'name': product?.title ?? 'منتج غير معروف',
-      'title': product?.title ?? 'منتج غير معروف',
+      'name':
+          product?.title ??
+          AppLocalizations.of(context).translate('unknown_product'),
+      'title':
+          product?.title ??
+          AppLocalizations.of(context).translate('unknown_product'),
       'description': product?.description ?? '',
       'city': product?.governorate ?? '',
       'governorate': product?.governorate ?? '',
@@ -228,8 +260,12 @@ class _CartPageState extends State<CartPage> {
       'cart_item_id': item.id,
       'cart_id': item.cartId,
       'product_id': item.productId,
-      'name': product?.title ?? 'منتج غير معروف',
-      'title': product?.title ?? 'منتج غير معروف',
+      'name':
+          product?.title ??
+          AppLocalizations.of(context).translate('unknown_product'),
+      'title':
+          product?.title ??
+          AppLocalizations.of(context).translate('unknown_product'),
       'description': product?.description ?? '',
       'city': product?.governorate ?? '',
       'governorate': product?.governorate ?? '',
@@ -315,47 +351,58 @@ class _CartPageState extends State<CartPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none,
-                  color: AppTheme.white,
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsPage(),
-                    ),
-                  );
-                },
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Colors.orange,
-                    shape: BoxShape.circle,
+          Obx(() {
+            final int unreadCount = _notificationsController.unreadCount;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.notifications_none,
+                    color: AppTheme.white,
                   ),
-                  child: const Center(
-                    child: Text(
-                      '2',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsPage(),
+                      ),
+                    );
+                    if (mounted) {
+                      await _notificationsController.refreshNotifications();
+                    }
+                  },
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: const BoxDecoration(
+                        color: Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
         ],
       ),
       body: Obx(() {
@@ -550,7 +597,9 @@ class _CartPageState extends State<CartPage> {
                       Text(
                         canPurchase
                             ? AppLocalizations.of(context).translate('Pay')
-                            : 'غير متاح',
+                            : AppLocalizations.of(
+                                context,
+                              ).translate('unavailable_badge'),
                         style: TextStyle(
                           fontSize: 10,
                           color: canPurchase ? activeColor : AppTheme.textLight,
@@ -667,7 +716,13 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  outOfStock ? 'نفد المخزون' : 'المتوفر: $availableQuantity',
+                  outOfStock
+                      ? AppLocalizations.of(
+                          context,
+                        ).translate('out_of_stock_badge')
+                      : AppLocalizations.of(context)
+                            .translate('available_badge')
+                            .replaceAll('{qty}', availableQuantity.toString()),
                   style: TextStyle(
                     fontSize: 10,
                     color: outOfStock
@@ -683,7 +738,7 @@ class _CartPageState extends State<CartPage> {
                 GestureDetector(
                   onTap: () => _openProductDetails(item),
                   child: Text(
-                    'الإجمالي: ${_formatPrice(item.totalPrice)} ${AppLocalizations.of(context).translate('SYP')}',
+                    '${AppLocalizations.of(context).translate('total_label_prefix')}${_formatPrice(item.totalPrice)} ${AppLocalizations.of(context).translate('SYP')}',
                     style: TextStyle(
                       fontSize: 10,
                       color: isDarkMode
@@ -892,7 +947,7 @@ class _CartPageState extends State<CartPage> {
               ),
               const Spacer(),
               Text(
-                'الإجمالي النهائي',
+                AppLocalizations.of(context).translate('final_total_label'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -967,9 +1022,9 @@ class _CartPageState extends State<CartPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'إعادة المحاولة',
-                style: TextStyle(color: Colors.white),
+              child: Text(
+                AppLocalizations.of(context).translate('retry'),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ],

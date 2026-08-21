@@ -198,7 +198,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   decoration: BoxDecoration(
                     color: isDarkMode
                         ? AppTheme.inputFieldBg
-                        : Colors.white.withOpacity(0.15),
+                        : Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -379,7 +379,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDarkMode
-                    ? AppTheme.selectedBorder.withOpacity(0.2)
+                    ? AppTheme.selectedBorder.withValues(alpha: 0.2)
                     : AppTheme.primaryLight)
               : (isDarkMode ? AppTheme.inputFieldBg : AppTheme.background),
           borderRadius: BorderRadius.circular(14),
@@ -452,7 +452,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _identityImage != null
-                      ? Colors.green.withOpacity(0.5)
+                      ? Colors.green.withValues(alpha: 0.5)
                       : (isDarkMode ? Colors.transparent : AppTheme.border),
                   width: 1.5,
                 ),
@@ -639,7 +639,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedGovernorate,
+          initialValue: _selectedGovernorate,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           hint: Text(
             AppLocalizations.of(context).translate('Select your governorate'),
@@ -856,7 +856,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+          color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.05),
           blurRadius: 12,
           offset: const Offset(0, 2),
         ),

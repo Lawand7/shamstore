@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shamstore/features/auth/controllers/update_profile_controller.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/utils/localized_content.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -175,10 +176,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         context,
         _updateProfileController.errorMessage.value.isNotEmpty
             ? _updateProfileController.errorMessage.value
-            : _text(
-                'حدث خطأ أثناء تحديث الملف الشخصي',
-                'An error occurred while updating your profile.',
-              ),
+            : AppLocalizations.of(context).translate('error_profile_update'),
       );
       return;
     }
@@ -187,7 +185,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     AppFeedback.success(
       context,
-      result['message']?.toString() ?? 'message_profile_updated',
+      result['message']?.toString() ??
+          AppLocalizations.of(context).translate('message_profile_updated'),
     );
 
     Navigator.pop(context, {
@@ -215,6 +214,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final Color activePrimary = isDarkMode
         ? AppTheme.accentBlue
         : AppTheme.primary;
+    final localization = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDarkMode
@@ -225,7 +225,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          _text('تعديل الملف الشخصي', 'Edit Profile'),
+          localization.translate('edit_profile_title'),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -250,77 +250,62 @@ class _EditProfilePageState extends State<EditProfilePage> {
             key: _formKey,
             child: Column(
               children: [
-                _buildProfileImagePicker(isDarkMode, activePrimary),
+                _buildProfileImagePicker(
+                  isDarkMode,
+                  activePrimary,
+                  localization,
+                ),
                 const SizedBox(height: 24),
-
                 _buildTextField(
                   controller: _firstNameController,
-                  label: _text('الاسم الأول', 'First name'),
-                  hint: _text('أدخل الاسم الأول', 'Enter first name'),
+                  label: localization.translate('first_name_label'),
+                  hint: localization.translate('first_name_hint'),
                   icon: Icons.person_outline,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
                   validator: (value) {
                     final text = value?.trim() ?? '';
                     if (text.isEmpty) {
-                      return _text(
-                        'الاسم الأول مطلوب',
-                        'First name is required',
-                      );
+                      return localization.translate('first_name_req');
                     }
                     if (text.length > 255) {
-                      return _text(
-                        'الاسم الأول طويل جداً',
-                        'First name is too long',
-                      );
+                      return localization.translate('first_name_long');
                     }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildTextField(
                   controller: _lastNameController,
-                  label: _text('الاسم الأخير', 'Last name'),
-                  hint: _text('أدخل الاسم الأخير', 'Enter last name'),
+                  label: localization.translate('last_name_label'),
+                  hint: localization.translate('last_name_hint'),
                   icon: Icons.person_outline,
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
                   validator: (value) {
                     final text = value?.trim() ?? '';
                     if (text.isEmpty) {
-                      return _text(
-                        'الاسم الأخير مطلوب',
-                        'Last name is required',
-                      );
+                      return localization.translate('last_name_req');
                     }
                     if (text.length > 255) {
-                      return _text(
-                        'الاسم الأخير طويل جداً',
-                        'Last name is too long',
-                      );
+                      return localization.translate('last_name_long');
                     }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildDateField(
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
+                  localization: localization,
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildGovernorateDropdown(
                   isDarkMode: isDarkMode,
                   activePrimary: activePrimary,
+                  localization: localization,
                 ),
-
                 const SizedBox(height: 30),
-
                 Obx(() {
                   final isLoading = _updateProfileController.isLoading.value;
 
@@ -346,7 +331,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                             )
                           : Text(
-                              _text('حفظ التغييرات', 'Save changes'),
+                              localization.translate('save_changes_btn'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
@@ -364,7 +349,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildProfileImagePicker(bool isDarkMode, Color activePrimary) {
+  Widget _buildProfileImagePicker(
+    bool isDarkMode,
+    Color activePrimary,
+    AppLocalizations localization,
+  ) {
     final imagePath = _selectedProfileImagePath;
 
     return Column(
@@ -379,9 +368,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: activePrimary.withOpacity(0.12),
+                  color: activePrimary.withValues(alpha: 0.12),
                   border: Border.all(
-                    color: activePrimary.withOpacity(0.35),
+                    color: activePrimary.withValues(alpha: 0.35),
                     width: 2,
                   ),
                 ),
@@ -431,10 +420,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         const SizedBox(height: 10),
         Text(
-          _text(
-            'اضغط لاختيار صورة من المعرض',
-            'Tap to choose an image from the gallery',
-          ),
+          localization.translate('pick_image_hint'),
           style: TextStyle(
             color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
             fontSize: 13,
@@ -480,11 +466,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _buildDateField({
     required bool isDarkMode,
     required Color activePrimary,
+    required AppLocalizations localization,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel(_text('تاريخ الميلاد', 'Date of birth'), isDarkMode),
+        _fieldLabel(localization.translate('dob_label'), isDarkMode),
         const SizedBox(height: 8),
         TextFormField(
           controller: _dateOfBirthController,
@@ -493,13 +480,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           validator: (value) {
             final text = value?.trim() ?? '';
             if (text.isEmpty) {
-              return _text('تاريخ الميلاد مطلوب', 'Date of birth is required');
+              return localization.translate('dob_req');
             }
             if (DateTime.tryParse(text) == null) {
-              return _text(
-                'صيغة تاريخ الميلاد غير صحيحة',
-                'Invalid date of birth format',
-              );
+              return localization.translate('dob_invalid');
             }
             return null;
           },
@@ -508,7 +492,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             fontSize: 14,
           ),
           decoration: _inputDecoration(
-            hint: _text('اختر تاريخ الميلاد', 'Select date of birth'),
+            hint: localization.translate('dob_hint'),
             icon: Icons.calendar_today_outlined,
             isDarkMode: isDarkMode,
             activePrimary: activePrimary,
@@ -521,18 +505,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _buildGovernorateDropdown({
     required bool isDarkMode,
     required Color activePrimary,
+    required AppLocalizations localization,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel(_text('المحافظة', 'Governorate'), isDarkMode),
+        _fieldLabel(localization.translate('gov_label'), isDarkMode),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedGovernorate,
+          initialValue: _selectedGovernorate,
           dropdownColor: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return _text('المحافظة مطلوبة', 'Governorate is required');
+              return localization.translate('gov_req');
             }
             return null;
           },
@@ -541,7 +526,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             fontSize: 14,
           ),
           decoration: _inputDecoration(
-            hint: _text('اختر المحافظة', 'Select governorate'),
+            hint: localization.translate('gov_hint'),
             icon: Icons.location_on_outlined,
             isDarkMode: isDarkMode,
             activePrimary: activePrimary,
@@ -587,7 +572,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       hintText: hint,
       hintStyle: TextStyle(
         color: isDarkMode
-            ? AppTheme.textSecondary.withOpacity(0.45)
+            ? AppTheme.textSecondary.withValues(alpha: 0.45)
             : AppTheme.textLight,
         fontSize: 13,
       ),
@@ -612,11 +597,5 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderSide: BorderSide(color: activePrimary, width: 1.5),
       ),
     );
-  }
-
-  String _text(String arabic, String english) {
-    return Localizations.localeOf(context).languageCode == 'ar'
-        ? arabic
-        : english;
   }
 }

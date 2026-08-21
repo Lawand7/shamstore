@@ -53,6 +53,7 @@ class SellerProductController extends GetxController {
     required int quantity,
     required String governorate,
     required int categoryId,
+    required String status, // <-- تمت إضافة بارامتر الحالة
     required File productImageFile,
   }) async {
     try {
@@ -67,6 +68,7 @@ class SellerProductController extends GetxController {
         quantity: quantity,
         governorate: governorate,
         categoryId: categoryId,
+        status: status, // <-- إرسال الحالة للـ Repository
         productImageFile: productImageFile,
       );
 
@@ -75,6 +77,7 @@ class SellerProductController extends GetxController {
       debugPrint('========== SELLER PRODUCT CREATED ==========');
       debugPrint('Product ID: ${product.id}');
       debugPrint('Title: ${product.title}');
+      debugPrint('Status: $status');
       debugPrint('Category ID: ${product.categoryId}');
       debugPrint('============================================');
 
@@ -99,6 +102,7 @@ class SellerProductController extends GetxController {
     int? quantity,
     String? governorate,
     int? categoryId,
+    String? status, // <-- تمت إضافة بارامتر الحالة للتعديل
     File? productImageFile,
   }) async {
     try {
@@ -114,6 +118,7 @@ class SellerProductController extends GetxController {
         quantity: quantity,
         governorate: governorate,
         categoryId: categoryId,
+        status: status, // <-- إرسال الحالة
         productImageFile: productImageFile,
       );
 

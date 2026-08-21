@@ -14,8 +14,6 @@ import 'package:shamstore/screen/seller_home_page.dart';
 import 'package:shamstore/screen/welcome_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -60,6 +58,9 @@ class _MyAppState extends State<MyApp> {
   Future<void> changeLocale(Locale locale) async {
     await AppLocalizations.saveLanguageCode(locale.languageCode);
 
+    // إجبار GetX على تحديث لغة التطبيق بالكامل بشكل فوري
+    Get.updateLocale(locale);
+
     if (!mounted) return;
 
     setState(() {
@@ -87,31 +88,30 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (_, ThemeMode currentMode, __) {
-        return GetMaterialApp(
-          title: 'ShamStore',
-          debugShowCheckedModeBanner: false,
+    // قراءة حالة الثيم مباشرة من الذاكرة المحلية عند البناء
+    final bool isDarkModeSaved =
+        GetStorage().read<bool>('is_dark_mode') ?? false;
 
-          locale: _locale,
+    return GetMaterialApp(
+      title: 'ShamStore',
+      debugShowCheckedModeBanner: false,
 
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: currentMode,
+      locale: _locale,
 
-          supportedLocales: const [Locale('en'), Locale('ar')],
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDarkModeSaved ? ThemeMode.dark : ThemeMode.light,
 
-          localizationsDelegates: [
-            AppLocalizationsDelegate(),
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
 
-          home: _initialScreen,
-        );
-      },
+      localizationsDelegates: const [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      home: _initialScreen,
     );
   }
 }

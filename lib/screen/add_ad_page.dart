@@ -156,14 +156,13 @@ class _AddAdPageState extends State<AddAdPage> {
                       : null,
                 ),
                 const SizedBox(height: 20),
-
                 _buildLabel(
                   AppLocalizations.of(context).translate('Governorate Label'),
                   isDarkMode,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedGovernorate,
+                  initialValue: _selectedGovernorate,
                   alignment: isArabic
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
@@ -207,7 +206,6 @@ class _AddAdPageState extends State<AddAdPage> {
                       : null,
                 ),
                 const SizedBox(height: 20),
-
                 _buildLabel(
                   AppLocalizations.of(context).translate('Phone Number Label'),
                   isDarkMode,
@@ -233,19 +231,20 @@ class _AddAdPageState extends State<AddAdPage> {
                         ),
                       ),
                   validator: (val) {
-                    if (val!.isEmpty)
+                    if (val!.isEmpty) {
                       return AppLocalizations.of(
                         context,
                       ).translate('Required Field');
-                    if (val.length < 10)
+                    }
+                    if (val.length < 10) {
                       return AppLocalizations.of(
                         context,
                       ).translate('Invalid Phone');
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildLabel(
                   AppLocalizations.of(
                     context,
@@ -273,7 +272,6 @@ class _AddAdPageState extends State<AddAdPage> {
                       : null,
                 ),
                 const SizedBox(height: 32),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12.0),
                   child: Container(
@@ -281,13 +279,13 @@ class _AddAdPageState extends State<AddAdPage> {
                     padding: const EdgeInsets.all(14.0),
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? AppTheme.accentBlue.withOpacity(0.08)
-                          : AppTheme.primary.withOpacity(0.08),
+                          ? AppTheme.accentBlue.withValues(alpha: 0.08)
+                          : AppTheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDarkMode
-                            ? AppTheme.accentBlue.withOpacity(0.3)
-                            : AppTheme.primary.withOpacity(0.2),
+                            ? AppTheme.accentBlue.withValues(alpha: 0.3)
+                            : AppTheme.primary.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -323,7 +321,6 @@ class _AddAdPageState extends State<AddAdPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -335,8 +332,10 @@ class _AddAdPageState extends State<AddAdPage> {
                           : Colors.blue,
                       disabledBackgroundColor:
                           (isDarkMode ? AppTheme.selectedBorder : Colors.blue)
-                              .withOpacity(0.3),
-                      disabledForegroundColor: Colors.white.withOpacity(0.6),
+                              .withValues(alpha: 0.3),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.6,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),

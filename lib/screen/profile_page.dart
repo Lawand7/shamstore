@@ -128,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
         context,
         _logoutController.errorMessage.value.isNotEmpty
             ? _logoutController.errorMessage.value
-            : 'تعذر حذف بيانات الجلسة من الجهاز',
+            : AppLocalizations.of(context).translate('error_logout'),
       );
       return;
     }
@@ -213,8 +213,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return value.startsWith('http://') || value.startsWith('https://');
   }
 
-  String _safeValue(String value) {
-    return value.trim().isNotEmpty ? value.trim() : 'غير متوفر';
+  String _safeValue(BuildContext context, String value) {
+    return value.trim().isNotEmpty
+        ? value.trim()
+        : AppLocalizations.of(context).translate('not_available');
   }
 
   @override
@@ -264,10 +266,10 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 92,
             height: 92,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 width: 2,
               ),
             ),
@@ -275,7 +277,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 12),
           Text(
-            _fullName.isNotEmpty ? _fullName : 'غير متوفر',
+            _fullName.isNotEmpty
+                ? _fullName
+                : AppLocalizations.of(context).translate('not_available'),
             style: const TextStyle(
               color: AppTheme.white,
               fontSize: 18,
@@ -286,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -300,9 +304,9 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.4)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -368,7 +372,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.05),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -379,7 +383,9 @@ class _ProfilePageState extends State<ProfilePage> {
           _infoRow(
             Icons.person_outline,
             AppLocalizations.of(context).translate('Full Name'),
-            _fullName.isNotEmpty ? _fullName : 'غير متوفر',
+            _fullName.isNotEmpty
+                ? _fullName
+                : AppLocalizations.of(context).translate('not_available'),
             isDarkMode,
           ),
           _divider(isDarkMode),
@@ -392,15 +398,19 @@ class _ProfilePageState extends State<ProfilePage> {
           _divider(isDarkMode),
           _infoRow(
             Icons.calendar_today_outlined,
-            'تاريخ الميلاد',
-            _safeValue(_dateOfBirth),
+            AppLocalizations.of(context).translate('Date of Birth'),
+            _safeValue(context, _dateOfBirth),
             isDarkMode,
           ),
           _divider(isDarkMode),
           _infoRow(
             Icons.location_on_outlined,
             AppLocalizations.of(context).translate('Governorate'),
-            _safeValue(_selectedGovernorate),
+            _selectedGovernorate.trim().isNotEmpty
+                ? AppLocalizations.of(
+                    context,
+                  ).translate(_selectedGovernorate.trim())
+                : AppLocalizations.of(context).translate('not_available'),
             isDarkMode,
           ),
           _divider(isDarkMode),
@@ -484,7 +494,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.05),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -529,7 +539,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           _divider(isDarkMode),
           _menuItem(
-            'إعدادات الأمان',
+            AppLocalizations.of(context).translate('Security Settings'),
             Icons.security_rounded,
             isDarkMode,
             onTap: () {
@@ -713,7 +723,7 @@ class _ProfilePageState extends State<ProfilePage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: (color ?? activePrimary).withOpacity(0.08),
+                color: (color ?? activePrimary).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, size: 18, color: color ?? activePrimary),

@@ -123,12 +123,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 10),
-
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: activePrimary.withOpacity(0.1),
+                      color: activePrimary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -138,9 +137,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
                 _buildPasswordField(
                   controller: _oldPasswordController,
                   label: AppLocalizations.of(
@@ -156,9 +153,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     setState(() => _obscureOld = !_obscureOld);
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildPasswordField(
                   controller: _newPasswordController,
                   label: AppLocalizations.of(
@@ -174,9 +169,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     setState(() => _obscureNew = !_obscureNew);
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _buildPasswordField(
                   controller: _confirmPasswordController,
                   label: AppLocalizations.of(
@@ -192,7 +185,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     setState(() => _obscureConfirm = !_obscureConfirm);
                   },
                 ),
-
                 Align(
                   alignment: isArabic
                       ? Alignment.centerLeft
@@ -219,9 +211,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 Obx(() {
                   final isLoading = _changePasswordController.isLoading.value;
 
@@ -315,7 +305,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             hintText: hint,
             hintStyle: TextStyle(
               color: isDarkMode
-                  ? AppTheme.textSecondary.withOpacity(0.4)
+                  ? AppTheme.textSecondary.withValues(alpha: 0.4)
                   : AppTheme.textLight,
               fontSize: 13,
             ),

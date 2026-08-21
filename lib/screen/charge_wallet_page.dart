@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamstore/features/wallet/repositories/wallet_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
-import 'package:shamstore/utils/app_localizations.dart'; // استيراد ملف الترجمة
+import 'package:shamstore/utils/app_localizations.dart';
 
 class ChargeWalletPage extends StatefulWidget {
   const ChargeWalletPage({super.key});
@@ -116,7 +116,7 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -133,7 +133,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
             ),
           ),
           const SizedBox(height: 16),
-
           Container(
             width: 160,
             height: 160,
@@ -146,9 +145,7 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
             ),
             child: Icon(Icons.qr_code_2, size: 130, color: activeColor),
           ),
-
           const SizedBox(height: 16),
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -212,7 +209,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
               ],
             ),
           ),
-
           const SizedBox(height: 10),
           Text(
             AppLocalizations.of(context).translate('Transfer description text'),
@@ -244,7 +240,7 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -310,7 +306,6 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
             ),
           ),
           const SizedBox(height: 14),
-
           TextField(
             controller: _transferNumberController,
             enabled: !_isSubmitting,
@@ -379,8 +374,8 @@ class _ChargeWalletPageState extends State<ChargeWalletPage> {
               ? AppTheme.inputFieldBg
               : AppTheme.border,
           disabledForegroundColor: isDarkMode
-              ? AppTheme.textSecondary.withOpacity(0.5)
-              : Colors.white.withOpacity(0.6),
+              ? AppTheme.textSecondary.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.6),
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

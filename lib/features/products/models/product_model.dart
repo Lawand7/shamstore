@@ -8,6 +8,7 @@ class ProductModel {
   final String description;
   final double price;
   final int quantity;
+  final String status; // <-- 1. الحقل الجديد
   final String governorate;
   final String productImageUrl;
   final String productUrl;
@@ -23,6 +24,7 @@ class ProductModel {
     required this.description,
     required this.price,
     required this.quantity,
+    required this.status, // <-- 2. الإضافة في الباني (Constructor)
     required this.governorate,
     required this.productImageUrl,
     required this.productUrl,
@@ -40,6 +42,8 @@ class ProductModel {
       description: json['description']?.toString() ?? '',
       price: _toDouble(json['price']),
       quantity: _toInt(json['quantity']),
+      // 3. قراءة القيمة من الـ API، مع وضع 'new' كقيمة افتراضية آمنة في حال فشل الباك إند في إرسالها
+      status: json['status']?.toString() ?? 'new',
       governorate: json['governorate']?.toString() ?? '',
       productImageUrl: json['product_image_url']?.toString() ?? '',
       productUrl: json['product_url']?.toString() ?? '',
@@ -58,6 +62,7 @@ class ProductModel {
       'description': description,
       'price': price,
       'quantity': quantity,
+      'status': status, // <-- 4. تجهيز الحقل للإرسال عند الإضافة أو التعديل
       'governorate': governorate,
       'product_image_url': productImageUrl,
       'product_url': productUrl,
@@ -65,6 +70,14 @@ class ProductModel {
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
+  }
+
+  // ميزة استباقية: دالة مساعدة لترجمة الحالة فوراً لتسهيل عرضها في واجهات المستخدم (UI)
+  String get statusInArabic {
+    if (status.toLowerCase() == 'used') {
+      return 'مستعمل';
+    }
+    return 'جديد';
   }
 
   String get fullImageUrl {

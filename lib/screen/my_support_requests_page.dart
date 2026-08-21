@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamstore/features/support/repositories/support_repository.dart';
 import 'package:shamstore/them/app_theme.dart';
+import 'package:shamstore/utils/app_localizations.dart';
 
 class MySupportRequestsPage extends StatefulWidget {
   const MySupportRequestsPage({super.key});
@@ -138,7 +139,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          _text('طلبات الدعم', 'Support Requests'),
+          AppLocalizations.of(context).translate('support_requests_title'),
           style: const TextStyle(
             color: AppTheme.white,
             fontSize: 16,
@@ -168,11 +169,15 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         children: [
           _statusChip(
             'pending',
-            _text('قيد المراجعة', 'Pending review'),
+            AppLocalizations.of(context).translate('status_pending_review'),
             isDarkMode,
           ),
           const SizedBox(width: 8),
-          _statusChip('answered', _text('تمت الإجابة', 'Answered'), isDarkMode),
+          _statusChip(
+            'answered',
+            AppLocalizations.of(context).translate('status_answered_support'),
+            isDarkMode,
+          ),
         ],
       ),
     );
@@ -215,7 +220,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => _loadQuestions(refresh: true),
-                child: Text(_text('إعادة المحاولة', 'Try again')),
+                child: Text(AppLocalizations.of(context).translate('retry')),
               ),
             ],
           ),
@@ -232,10 +237,9 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
             const SizedBox(height: 220),
             Center(
               child: Text(
-                _text(
-                  'لا توجد طلبات دعم بهذه الحالة',
-                  'No support requests with this status',
-                ),
+                AppLocalizations.of(
+                  context,
+                ).translate('no_support_requests_status'),
               ),
             ),
           ],
@@ -266,6 +270,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
 
   Widget _buildQuestionCard(Map<String, dynamic> question, bool isDarkMode) {
     final answer = question['answer']?.toString().trim() ?? '';
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Card(
       color: isDarkMode ? AppTheme.cardBackground : AppTheme.white,
@@ -284,7 +289,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
           children: [
             Text(
               question['question']?.toString() ?? '',
-              textAlign: TextAlign.right,
+              textAlign: isArabic ? TextAlign.right : TextAlign.left,
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
                 fontSize: 13,
@@ -296,8 +301,10 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                _text('إجابة الدعم', 'Support response'),
-                textAlign: TextAlign.right,
+                AppLocalizations.of(
+                  context,
+                ).translate('support_response_label'),
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
                 style: TextStyle(
                   color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
                   fontSize: 12,
@@ -307,7 +314,7 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
               const SizedBox(height: 4),
               Text(
                 answer,
-                textAlign: TextAlign.right,
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
                 style: TextStyle(
                   color: isDarkMode
                       ? AppTheme.textSecondary
@@ -318,11 +325,10 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
             ] else ...[
               const SizedBox(height: 10),
               Text(
-                _text(
-                  'بانتظار رد فريق الدعم',
-                  'Waiting for the support team response',
-                ),
-                textAlign: TextAlign.right,
+                AppLocalizations.of(
+                  context,
+                ).translate('waiting_support_response'),
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
                 style: const TextStyle(color: Colors.orange, fontSize: 11),
               ),
             ],
@@ -330,11 +336,5 @@ class _MySupportRequestsPageState extends State<MySupportRequestsPage> {
         ),
       ),
     );
-  }
-
-  String _text(String arabic, String english) {
-    return Localizations.localeOf(context).languageCode == 'ar'
-        ? arabic
-        : english;
   }
 }

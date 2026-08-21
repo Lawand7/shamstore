@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
-import 'package:shamstore/screen/product_details_Page.dart';
+import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -100,10 +100,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل العملية',
+        title: AppLocalizations.of(context).translate('action_failed_title'),
         message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
             ? _customerController.favoriteActionErrorMessage.value
-            : 'حدث خطأ أثناء حذف المنتج من المفضلة',
+            : AppLocalizations.of(context).translate('error_remove_favorite'),
         isError: true,
       );
       return;
@@ -114,8 +114,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
 
     _showSnackBar(
-      title: 'نجاح',
-      message: 'تم حذف المنتج من المفضلة',
+      title: AppLocalizations.of(context).translate('success_title'),
+      message: AppLocalizations.of(
+        context,
+      ).translate('success_removed_favorite'),
       isError: false,
     );
   }
@@ -151,8 +153,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (existingItem != null && existingItem.quantity >= product.quantity) {
       _showSnackBar(
-        title: 'الكمية غير متاحة',
-        message: 'لديك في السلة كامل الكمية المتوفرة: ${product.quantity}',
+        title: AppLocalizations.of(
+          context,
+        ).translate('quantity_unavailable_title'),
+        message:
+            '${AppLocalizations.of(context).translate('cart_has_full_quantity')}: ${product.quantity}',
         isError: true,
       );
       return;
@@ -167,28 +172,30 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل الإضافة',
+        title: AppLocalizations.of(context).translate('add_failed_title'),
         message: _customerController.addCartItemErrorMessage.value.isNotEmpty
             ? _customerController.addCartItemErrorMessage.value
-            : 'تعذر إضافة المنتج إلى السلة',
+            : AppLocalizations.of(context).translate('error_add_to_cart'),
         isError: true,
       );
       return;
     }
 
     _showSnackBar(
-      title: 'تمت الإضافة',
-      message: 'تمت إضافة المنتج إلى السلة',
+      title: AppLocalizations.of(context).translate('added_success_title'),
+      message: AppLocalizations.of(context).translate('success_added_to_cart'),
       isError: false,
     );
   }
 
   void _showUnavailableProductMessage(ProductModel product) {
     _showSnackBar(
-      title: 'المنتج غير متاح',
+      title: AppLocalizations.of(
+        context,
+      ).translate('product_unavailable_title'),
       message: product.quantity <= 0
-          ? 'نفدت كمية هذا المنتج'
-          : 'أوقف البائع عرض هذا المنتج',
+          ? AppLocalizations.of(context).translate('product_out_of_stock')
+          : AppLocalizations.of(context).translate('product_hidden_by_seller'),
       isError: true,
     );
   }
@@ -243,9 +250,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'المفضلة',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context).translate('nav_favorites'),
+          style: const TextStyle(
             color: AppTheme.white,
             fontWeight: FontWeight.bold,
             fontSize: 17,
@@ -349,7 +356,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         children: [
           if (hiddenCount > 0)
             Text(
-              'مخفي لعدم التوفر: $hiddenCount',
+              '${AppLocalizations.of(context).translate('hidden_unavailable_count')} $hiddenCount',
               style: TextStyle(
                 color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
                 fontSize: 11,
@@ -358,7 +365,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
           else
             const SizedBox.shrink(),
           Text(
-            'المنتجات المتاحة: $visibleCount',
+            '${AppLocalizations.of(context).translate('available_products_count')} $visibleCount',
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 13,
@@ -435,9 +442,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'إعادة المحاولة',
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        AppLocalizations.of(context).translate('retry'),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   ],
@@ -478,8 +485,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
             const SizedBox(height: 16),
             Text(
               hasUnavailableFavorites
-                  ? 'منتجاتك المفضلة غير متاحة حالياً'
-                  : 'قائمة المفضلة فارغة',
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('favorites_unavailable_title')
+                  : AppLocalizations.of(
+                      context,
+                    ).translate('favorites_empty_title'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -490,8 +501,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
             const SizedBox(height: 6),
             Text(
               hasUnavailableFavorites
-                  ? 'المنتجات المحفوظة نفدت كميتها أو أوقف البائع عرضها. اسحب للأسفل للتحقق مجدداً.'
-                  : 'اضغط على زر القلب في الصفحة الرئيسية لإضافة المنتجات',
+                  ? AppLocalizations.of(
+                      context,
+                    ).translate('favorites_unavailable_desc')
+                  : AppLocalizations.of(
+                      context,
+                    ).translate('favorites_empty_desc'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
@@ -574,7 +589,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         Text(
                           product.title.isNotEmpty
                               ? product.title
-                              : 'منتج بدون اسم',
+                              : AppLocalizations.of(
+                                  context,
+                                ).translate('unnamed_product'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -731,7 +748,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         const SizedBox(width: 5),
         Expanded(
           child: Text(
-            'الكمية المتوفرة',
+            AppLocalizations.of(context).translate('available_quantity_label'),
             style: TextStyle(
               fontSize: 10,
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textLight,
@@ -766,9 +783,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
             ),
           ),
         const SizedBox(width: 3),
-        const Text(
-          'ل.س',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        Text(
+          AppLocalizations.of(context).translate('currency_sp'),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
         ),
         const SizedBox(width: 3),
         if (_isArabic)

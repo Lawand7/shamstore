@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:shamstore/features/customer/controllers/customer_controller.dart';
 import 'package:shamstore/features/products/controllers/product_controller.dart';
 import 'package:shamstore/features/products/models/product_model.dart';
-import 'package:shamstore/screen/product_details_Page.dart';
+import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_feedback.dart';
 import 'package:shamstore/utils/app_localizations.dart';
@@ -138,10 +138,14 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
   Future<void> _openProductDetails(ProductModel product) async {
     if (!_isProductAvailable(product)) {
       _showSnackBar(
-        title: 'المنتج غير متاح',
+        title: AppLocalizations.of(
+          context,
+        ).translate('product_unavailable_title'),
         message: product.quantity <= 0
-            ? 'نفدت كمية هذا المنتج'
-            : 'أوقف البائع عرض هذا المنتج',
+            ? AppLocalizations.of(context).translate('product_out_of_stock')
+            : AppLocalizations.of(
+                context,
+              ).translate('product_hidden_by_seller'),
         isError: true,
       );
 
@@ -164,8 +168,12 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
   Future<void> _toggleFavorite(ProductModel product) async {
     if (!_isProductAvailable(product)) {
       _showSnackBar(
-        title: 'المنتج غير متاح',
-        message: 'لا يمكن تعديل المفضلة لمنتج غير متوفر',
+        title: AppLocalizations.of(
+          context,
+        ).translate('product_unavailable_title'),
+        message: AppLocalizations.of(
+          context,
+        ).translate('error_edit_unavailable_favorite'),
         isError: true,
       );
       await _refreshProducts();
@@ -182,20 +190,20 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل العملية',
+        title: AppLocalizations.of(context).translate('action_failed_title'),
         message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
             ? _customerController.favoriteActionErrorMessage.value
-            : 'تعذر تعديل المفضلة',
+            : AppLocalizations.of(context).translate('error_edit_favorite'),
         isError: true,
       );
       return;
     }
 
     _showSnackBar(
-      title: 'نجاح',
+      title: AppLocalizations.of(context).translate('success_title'),
       message: wasFavorite
-          ? 'تم حذف المنتج من المفضلة'
-          : 'تمت إضافة المنتج إلى المفضلة',
+          ? AppLocalizations.of(context).translate('success_removed_favorite')
+          : AppLocalizations.of(context).translate('success_added_favorite'),
       isError: false,
     );
   }
@@ -203,10 +211,14 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
   Future<void> _addProductToCart(ProductModel product) async {
     if (!_isProductAvailable(product)) {
       _showSnackBar(
-        title: 'المنتج غير متاح',
+        title: AppLocalizations.of(
+          context,
+        ).translate('product_unavailable_title'),
         message: product.quantity <= 0
-            ? 'نفدت كمية هذا المنتج'
-            : 'أوقف البائع عرض هذا المنتج',
+            ? AppLocalizations.of(context).translate('product_out_of_stock')
+            : AppLocalizations.of(
+                context,
+              ).translate('product_hidden_by_seller'),
         isError: true,
       );
       await _refreshProducts();
@@ -219,8 +231,11 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
 
     if (existingItem != null && existingItem.quantity >= product.quantity) {
       _showSnackBar(
-        title: 'الكمية غير متاحة',
-        message: 'لديك في السلة كامل الكمية المتوفرة: ${product.quantity}',
+        title: AppLocalizations.of(
+          context,
+        ).translate('quantity_unavailable_title'),
+        message:
+            '${AppLocalizations.of(context).translate('cart_has_full_quantity')}: ${product.quantity}',
         isError: true,
       );
       return;
@@ -235,18 +250,18 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل الإضافة',
+        title: AppLocalizations.of(context).translate('add_failed_title'),
         message: _customerController.addCartItemErrorMessage.value.isNotEmpty
             ? _customerController.addCartItemErrorMessage.value
-            : 'تعذر إضافة المنتج إلى السلة',
+            : AppLocalizations.of(context).translate('error_add_to_cart'),
         isError: true,
       );
       return;
     }
 
     _showSnackBar(
-      title: 'تمت الإضافة',
-      message: 'تمت إضافة المنتج إلى السلة',
+      title: AppLocalizations.of(context).translate('added_success_title'),
+      message: AppLocalizations.of(context).translate('success_added_to_cart'),
       isError: false,
     );
   }
@@ -330,7 +345,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           Expanded(
             child: Text(
               widget.categoryName,
-              textAlign: TextAlign.end,
+              textAlign: _isArabic() ? TextAlign.end : TextAlign.start,
               style: const TextStyle(
                 color: AppTheme.white,
                 fontSize: 18,
@@ -357,7 +372,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                 minimumSize: Size.zero,
               ),
               child: Text(
-                'تحديث',
+                AppLocalizations.of(context).translate('refresh_btn'),
                 style: TextStyle(
                   color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
                   fontSize: 12,
@@ -365,7 +380,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
               ),
             ),
             Text(
-              'المنتجات المتاحة: ${_visibleProducts.length}',
+              '${AppLocalizations.of(context).translate('available_products_count')} ${_visibleProducts.length}',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -490,9 +505,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'إعادة المحاولة',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              AppLocalizations.of(context).translate('retry'),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -524,8 +539,12 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           const SizedBox(height: 10),
           Text(
             allProductsUnavailable
-                ? 'لا توجد منتجات متاحة حالياً'
-                : 'لا توجد منتجات في هذا التصنيف',
+                ? AppLocalizations.of(
+                    context,
+                  ).translate('no_available_products')
+                : AppLocalizations.of(
+                    context,
+                  ).translate('no_products_in_category'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 14,
@@ -535,8 +554,12 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
           const SizedBox(height: 4),
           Text(
             allProductsUnavailable
-                ? 'المنتجات الموجودة نافدة أو أوقف البائع عرضها'
-                : 'اسحب للأسفل لتحديث القائمة',
+                ? AppLocalizations.of(
+                    context,
+                  ).translate('products_out_of_stock_hidden')
+                : AppLocalizations.of(
+                    context,
+                  ).translate('swipe_down_to_refresh'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
               fontSize: 12,
@@ -616,7 +639,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                         Text(
                           product.title.isNotEmpty
                               ? product.title
-                              : 'منتج بدون اسم',
+                              : AppLocalizations.of(
+                                  context,
+                                ).translate('unnamed_product'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -692,7 +717,9 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                             const SizedBox(width: 5),
                             Expanded(
                               child: Text(
-                                'الكمية المتوفرة',
+                                AppLocalizations.of(
+                                  context,
+                                ).translate('available_quantity_label'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDarkMode

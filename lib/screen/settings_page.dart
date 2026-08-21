@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:shamstore/them/app_theme.dart';
 import 'package:shamstore/utils/app_localizations.dart';
 import 'package:shamstore/main.dart';
@@ -25,7 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.topBottomBar : AppTheme.primary,
         title: Text(
-          AppLocalizations.of(context).translate('settings'), // ترجمة العنوان
+          AppLocalizations.of(context).translate('settings'),
           style: const TextStyle(
             color: AppTheme.white,
             fontWeight: FontWeight.w600,
@@ -46,7 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDarkMode ? 0.15 : 0.05),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.05),
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),
@@ -55,7 +57,6 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 🌐 خيار تغيير اللغة
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -68,7 +69,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       underline: const SizedBox(),
                       dropdownColor: isDarkMode
                           ? AppTheme.cardBackground
-                          : AppTheme.white, // قائمة الخيارات متناسقة
+                          : AppTheme.white,
                       icon: Icon(
                         Icons.keyboard_arrow_down,
                         color: isDarkMode
@@ -110,9 +111,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     const Spacer(),
                     Text(
-                      AppLocalizations.of(
-                        context,
-                      ).translate('app_language'), // ترجمة النص
+                      AppLocalizations.of(context).translate('app_language'),
                       style: TextStyle(
                         fontSize: 14,
                         color: isDarkMode
@@ -129,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             (isDarkMode
                                     ? AppTheme.accentBlue
                                     : AppTheme.primary)
-                                .withOpacity(0.08),
+                                .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -143,14 +142,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
-
               Divider(
                 height: 1,
                 color: isDarkMode ? AppTheme.inputFieldBg : AppTheme.border,
                 indent: 16,
                 endIndent: 16,
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -160,29 +157,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Switch(
                       value: isDarkMode,
-                      activeColor: AppTheme.accentBlue, // أزرق نيون مضيء للدارك
-                      activeTrackColor: AppTheme.selectedBorder.withOpacity(
-                        0.4,
+                      activeThumbColor: AppTheme.accentBlue,
+                      activeTrackColor: AppTheme.selectedBorder.withValues(
+                        alpha: 0.4,
                       ),
                       inactiveThumbColor: AppTheme.textLight,
                       inactiveTrackColor: isDarkMode
                           ? AppTheme.inputFieldBg
                           : AppTheme.border,
-                      onChanged: (value) {
-                        setState(() {
-                          if (value) {
-                            themeNotifier.value = ThemeMode.dark;
-                          } else {
-                            themeNotifier.value = ThemeMode.light;
-                          }
-                        });
+                      onChanged: (value) async {
+                        await GetStorage().write('is_dark_mode', value);
+                        Get.changeThemeMode(
+                          value ? ThemeMode.dark : ThemeMode.light,
+                        );
+                        setState(() {});
                       },
                     ),
                     const Spacer(),
                     Text(
-                      AppLocalizations.of(
-                        context,
-                      ).translate('dark_mode'), // ترجمة النص
+                      AppLocalizations.of(context).translate('dark_mode'),
                       style: TextStyle(
                         fontSize: 14,
                         color: isDarkMode
@@ -199,7 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             (isDarkMode
                                     ? AppTheme.accentBlue
                                     : AppTheme.primary)
-                                .withOpacity(0.08),
+                                .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(

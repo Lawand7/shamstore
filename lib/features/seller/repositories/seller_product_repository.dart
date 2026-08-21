@@ -14,6 +14,7 @@ class SellerProductRepository {
     required int quantity,
     required String governorate,
     required int categoryId,
+    required String status, // <-- تمت إضافة بارامتر الحالة هنا
     required File productImageFile,
   }) async {
     try {
@@ -26,6 +27,7 @@ class SellerProductRepository {
         'quantity': quantity,
         'governorate': governorate.trim(),
         'category_id': categoryId,
+        'status': status.trim(), // <-- إرسال الحالة إلى الباك إند
         'product_image_url': await MultipartFile.fromFile(
           productImageFile.path,
           filename: fileName,
@@ -69,6 +71,7 @@ class SellerProductRepository {
     int? quantity,
     String? governorate,
     int? categoryId,
+    String? status, // <-- تمت إضافة بارامتر الحالة هنا للتعديل
     File? productImageFile,
   }) async {
     try {
@@ -103,6 +106,12 @@ class SellerProductRepository {
 
       if (categoryId != null) {
         formMap['category_id'] = categoryId;
+        hasUpdateData = true;
+      }
+
+      // <-- إضافة التحقق من الحالة لتعديلها إن وجدت
+      if (status != null && status.trim().isNotEmpty) {
+        formMap['status'] = status.trim();
         hasUpdateData = true;
       }
 

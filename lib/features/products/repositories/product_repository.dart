@@ -209,6 +209,7 @@ class ProductRepository {
     double? minPrice,
     double? maxPrice,
     String? governorate,
+    String? status, // <-- تمت الإضافة هنا للفلترة بالحالة
     int page = 1,
   }) async {
     try {
@@ -229,6 +230,12 @@ class ProductRepository {
           cleanedGovernorate.isNotEmpty &&
           cleanedGovernorate != 'الكل') {
         queryParameters['governorate'] = cleanedGovernorate;
+      }
+
+      // <-- التحقق من الحالة وإرسالها إلى الـ API
+      final cleanedStatus = status?.trim();
+      if (cleanedStatus != null && cleanedStatus.isNotEmpty) {
+        queryParameters['status'] = cleanedStatus;
       }
 
       final response = await DioClient.dio.get(

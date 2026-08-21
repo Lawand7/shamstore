@@ -75,7 +75,10 @@ class _OtpScreenState extends State<OtpScreen> {
     _startTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AppFeedback.success(context, 'تم إرسال رمز التحقق إلى البريد الإلكتروني');
+      AppFeedback.success(
+        context,
+        AppLocalizations.of(context).translate('success_otp_sent'),
+      );
     });
   }
 
@@ -102,13 +105,16 @@ class _OtpScreenState extends State<OtpScreen> {
       setState(() => _seconds = 60);
       _startTimer();
 
-      AppFeedback.success(context, 'تم إرسال رمز جديد إلى البريد الإلكتروني');
+      AppFeedback.success(
+        context,
+        AppLocalizations.of(context).translate('success_new_otp_sent'),
+      );
     } else {
       AppFeedback.error(
         context,
         _otpController.errorMessage.value.isNotEmpty
             ? _otpController.errorMessage.value
-            : 'حدث خطأ أثناء إعادة إرسال الرمز',
+            : AppLocalizations.of(context).translate('error_resend_otp'),
       );
     }
   }
@@ -170,7 +176,10 @@ class _OtpScreenState extends State<OtpScreen> {
     final otp = _getOtpCode();
 
     if (otp.length != 6) {
-      AppFeedback.error(context, 'يرجى إدخال رمز التحقق المكون من 6 أرقام');
+      AppFeedback.error(
+        context,
+        AppLocalizations.of(context).translate('error_otp_6_digits'),
+      );
       return;
     }
 
@@ -183,7 +192,7 @@ class _OtpScreenState extends State<OtpScreen> {
         context,
         _otpController.errorMessage.value.isNotEmpty
             ? _otpController.errorMessage.value
-            : 'رمز التحقق غير صحيح',
+            : AppLocalizations.of(context).translate('error_invalid_otp'),
       );
       return;
     }
@@ -195,20 +204,16 @@ class _OtpScreenState extends State<OtpScreen> {
     if (token == null || token.isEmpty) {
       AppFeedback.error(
         context,
-        'تم التحقق من الحساب لكن لم يتم إرجاع التوكن من السيرفر',
+        AppLocalizations.of(context).translate('error_token_not_returned'),
       );
       return;
     }
 
     final pending = widget.pendingRegistrationData;
 
-    // الباك ممكن يرجع:
-    // user/profile
-    // أو مفاتيح رقمية: 0 و 1
-    final dynamic userRaw = response?['user'] ?? response?['0'] ?? response?[0];
+    final dynamic userRaw = response?['user'] ?? response?['0'];
 
-    final dynamic profileRaw =
-        response?['profile'] ?? response?['1'] ?? response?[1];
+    final dynamic profileRaw = response?['profile'] ?? response?['1'];
 
     Map<String, dynamic>? user;
     Map<String, dynamic>? profile;
@@ -278,7 +283,10 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (!mounted) return;
 
-    AppFeedback.success(context, 'تم التحقق من الحساب بنجاح');
+    AppFeedback.success(
+      context,
+      AppLocalizations.of(context).translate('success_account_verified'),
+    );
 
     if (!mounted) return;
 
@@ -344,6 +352,7 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Widget _buildHeader(bool isDarkMode) {
+    final bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
     return Container(
       width: double.infinity,
       height: 160,
@@ -359,7 +368,8 @@ class _OtpScreenState extends State<OtpScreen> {
           alignment: Alignment.center,
           children: [
             Positioned(
-              left: 20,
+              left: isArabic ? null : 20,
+              right: isArabic ? 20 : null,
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
@@ -368,11 +378,13 @@ class _OtpScreenState extends State<OtpScreen> {
                   decoration: BoxDecoration(
                     color: isDarkMode
                         ? AppTheme.inputFieldBg
-                        : Colors.white.withOpacity(0.15),
+                        : Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
+                  child: Icon(
+                    isArabic
+                        ? Icons.arrow_back_ios_rounded
+                        : Icons.arrow_back_ios_new_rounded,
                     color: AppTheme.white,
                     size: 16,
                   ),
@@ -386,9 +398,13 @@ class _OtpScreenState extends State<OtpScreen> {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(isDarkMode ? 0.05 : 0.15),
+                    color: Colors.white.withValues(
+                      alpha: isDarkMode ? 0.05 : 0.15,
+                    ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Icon(
                     Icons.sms_outlined,
@@ -426,7 +442,9 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'تم إرسال رمز التحقق إلى:\n$_email',
+          AppLocalizations.of(context)
+              .translate('verification_code_sent_to')
+              .replaceAll('{email}', _email),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 13,
@@ -542,7 +560,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'جاري إرسال الرمز...',
+                  AppLocalizations.of(context).translate('sending_code_msg'),
                   style: TextStyle(
                     color: primaryLinkColor,
                     fontSize: 14,
@@ -631,7 +649,7 @@ class _OtpScreenState extends State<OtpScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          AppLocalizations.of(context).translate('Wrong number? '),
+          AppLocalizations.of(context).translate('wrong_email_question'),
           style: TextStyle(
             color: isDarkMode ? AppTheme.textSecondary : Colors.grey,
             fontSize: 13,
@@ -640,7 +658,7 @@ class _OtpScreenState extends State<OtpScreen> {
         GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Text(
-            AppLocalizations.of(context).translate('Change it'),
+            AppLocalizations.of(context).translate('change_it_btn'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.accentBlue : AppTheme.primary,
               fontSize: 13,

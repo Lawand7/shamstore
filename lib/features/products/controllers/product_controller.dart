@@ -50,6 +50,7 @@ class ProductController extends GetxController {
   double? activeFilterMinPrice;
   double? activeFilterMaxPrice;
   String? activeFilterGovernorate;
+  String? activeFilterStatus; // <-- إضافة حالة المنتج هنا
 
   bool get hasMorePages => currentPage.value < lastPage.value;
 
@@ -60,12 +61,15 @@ class ProductController extends GetxController {
 
   bool get hasActiveFilter {
     final governorate = activeFilterGovernorate?.trim();
+    final status = activeFilterStatus?.trim(); // <-- التحقق من الحالة
 
     return (activeFilterCategoryId != null && activeFilterCategoryId! > 0) ||
         (activeFilterMinPrice != null && activeFilterMaxPrice != null) ||
         (governorate != null &&
             governorate.isNotEmpty &&
-            governorate != 'الكل');
+            governorate != 'الكل') ||
+        (status != null &&
+            status.isNotEmpty); // <-- إضافة الحالة لشرط الفلتر النشط
   }
 
   Future<void> fetchProducts({bool refresh = false}) async {
@@ -283,6 +287,7 @@ class ProductController extends GetxController {
     double? minPrice,
     double? maxPrice,
     String? governorate,
+    String? status, // <-- إضافة بارامتر الحالة للفلترة
     bool refresh = false,
   }) async {
     try {
@@ -297,6 +302,7 @@ class ProductController extends GetxController {
       activeFilterMinPrice = minPrice;
       activeFilterMaxPrice = maxPrice;
       activeFilterGovernorate = governorate;
+      activeFilterStatus = status; // <-- حفظ الحالة النشطة
 
       isFilterLoading.value = true;
       filterErrorMessage.value = '';
@@ -306,6 +312,7 @@ class ProductController extends GetxController {
         minPrice: minPrice,
         maxPrice: maxPrice,
         governorate: governorate,
+        status: status, // <-- تمرير الحالة للريبو
         page: filterCurrentPage.value,
       );
 
@@ -318,6 +325,7 @@ class ProductController extends GetxController {
 
       debugPrint('========== FILTER PRODUCTS LOADED ==========');
       debugPrint('Category ID: $categoryId');
+      debugPrint('Status: $status');
       debugPrint('Min Price: $minPrice');
       debugPrint('Max Price: $maxPrice');
       debugPrint('Governorate: $governorate');
@@ -355,6 +363,7 @@ class ProductController extends GetxController {
         minPrice: activeFilterMinPrice,
         maxPrice: activeFilterMaxPrice,
         governorate: activeFilterGovernorate,
+        status: activeFilterStatus, // <-- تمرير الحالة للريبو عند تحميل المزيد
         page: nextPage,
       );
 
@@ -396,5 +405,6 @@ class ProductController extends GetxController {
     activeFilterMinPrice = null;
     activeFilterMaxPrice = null;
     activeFilterGovernorate = null;
+    activeFilterStatus = null; // <-- تصفير الحالة
   }
 }

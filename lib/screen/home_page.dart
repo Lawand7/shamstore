@@ -15,7 +15,7 @@ import 'package:shamstore/screen/my_balanc_page.dart';
 import 'package:shamstore/screen/my_products_page.dart';
 import 'package:shamstore/screen/myorder_page.dart';
 import 'package:shamstore/screen/notifications_page.dart';
-import 'package:shamstore/screen/product_details_Page.dart';
+import 'package:shamstore/screen/product_details_page.dart';
 import 'package:shamstore/screen/profile_page.dart';
 import 'package:shamstore/screen/search_page.dart';
 import 'package:shamstore/screen/seller_orders_page.dart';
@@ -154,11 +154,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _refreshNotifications() async {
     await _notificationsController.refreshNotifications();
 
-    /*
-     * لا يوجد في الباك Endpoint مستقل لعدد غير المقروء.
-     * لذلك نحمّل الصفحات المتبقية حتى يكون رقم الجرس دقيقاً،
-     * وليس محسوباً من أول 20 إشعاراً فقط.
-     */
     while (_notificationsController.hasMore) {
       final loaded = await _notificationsController.fetchNotifications(
         refresh: false,
@@ -189,9 +184,7 @@ class _HomePageState extends State<HomePage> {
 
     if (!mounted) return;
 
-    setState(() {
-      // إعادة قراءة الاسم والصورة من TokenStorage بعد تعديل الملف الشخصي.
-    });
+    setState(() {});
   }
 
   String get _displayName => TokenStorage.getDisplayName();
@@ -271,8 +264,10 @@ class _HomePageState extends State<HomePage> {
 
     if (product.id <= 0) {
       _showSnackBar(
-        title: 'خطأ',
-        message: 'معرّف المنتج غير صالح',
+        title: AppLocalizations.of(context).translate('error_title'),
+        message: AppLocalizations.of(
+          context,
+        ).translate('error_invalid_product_id'),
         isError: true,
       );
       return;
@@ -286,20 +281,20 @@ class _HomePageState extends State<HomePage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل العملية',
+        title: AppLocalizations.of(context).translate('action_failed_title'),
         message: _customerController.favoriteActionErrorMessage.value.isNotEmpty
             ? _customerController.favoriteActionErrorMessage.value
-            : 'حدث خطأ أثناء تعديل المفضلة',
+            : AppLocalizations.of(context).translate('error_edit_favorite'),
         isError: true,
       );
       return;
     }
 
     _showSnackBar(
-      title: 'نجاح',
+      title: AppLocalizations.of(context).translate('success_title'),
       message: wasFavorite
-          ? 'تم حذف المنتج من المفضلة'
-          : 'تمت إضافة المنتج إلى المفضلة',
+          ? AppLocalizations.of(context).translate('success_removed_favorite')
+          : AppLocalizations.of(context).translate('success_added_favorite'),
       isError: false,
     );
   }
@@ -309,8 +304,10 @@ class _HomePageState extends State<HomePage> {
 
     if (product.id <= 0) {
       _showSnackBar(
-        title: 'خطأ',
-        message: 'معرّف المنتج غير صالح',
+        title: AppLocalizations.of(context).translate('error_title'),
+        message: AppLocalizations.of(
+          context,
+        ).translate('error_invalid_product_id'),
         isError: true,
       );
       return;
@@ -325,18 +322,18 @@ class _HomePageState extends State<HomePage> {
 
     if (!success) {
       _showSnackBar(
-        title: 'فشل الإضافة',
+        title: AppLocalizations.of(context).translate('add_failed_title'),
         message: _customerController.addCartItemErrorMessage.value.isNotEmpty
             ? _customerController.addCartItemErrorMessage.value
-            : 'حدث خطأ أثناء إضافة المنتج إلى السلة',
+            : AppLocalizations.of(context).translate('error_add_to_cart'),
         isError: true,
       );
       return;
     }
 
     _showSnackBar(
-      title: 'نجاح',
-      message: 'تمت إضافة المنتج إلى السلة',
+      title: AppLocalizations.of(context).translate('success_title'),
+      message: AppLocalizations.of(context).translate('success_added_to_cart'),
       isError: false,
     );
   }
@@ -878,9 +875,9 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'إعادة المحاولة',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              AppLocalizations.of(context).translate('retry'),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -908,7 +905,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 10),
           Text(
-            'لا توجد منتجات حالياً',
+            AppLocalizations.of(context).translate('no_products_currently'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textPrimary : AppTheme.textDark,
               fontSize: 14,
@@ -917,7 +914,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'اسحب للأسفل لتحديث القائمة',
+            AppLocalizations.of(context).translate('swipe_down_to_refresh'),
             style: TextStyle(
               color: isDarkMode ? AppTheme.textSecondary : AppTheme.textGrey,
               fontSize: 12,
@@ -995,7 +992,9 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           product.title.isNotEmpty
                               ? product.title
-                              : 'منتج بدون اسم',
+                              : AppLocalizations.of(
+                                  context,
+                                ).translate('unnamed_product'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -1071,7 +1070,9 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(width: 5),
                             Expanded(
                               child: Text(
-                                'الكمية المتوفرة',
+                                AppLocalizations.of(
+                                  context,
+                                ).translate('available_quantity_label'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDarkMode
