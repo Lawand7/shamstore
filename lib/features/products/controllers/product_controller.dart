@@ -287,7 +287,7 @@ class ProductController extends GetxController {
     double? minPrice,
     double? maxPrice,
     String? governorate,
-    String? status, // <-- إضافة بارامتر الحالة للفلترة
+    String? status, 
     bool refresh = false,
   }) async {
     try {
@@ -302,7 +302,7 @@ class ProductController extends GetxController {
       activeFilterMinPrice = minPrice;
       activeFilterMaxPrice = maxPrice;
       activeFilterGovernorate = governorate;
-      activeFilterStatus = status; // <-- حفظ الحالة النشطة
+      activeFilterStatus = status; 
 
       isFilterLoading.value = true;
       filterErrorMessage.value = '';
@@ -312,7 +312,7 @@ class ProductController extends GetxController {
         minPrice: minPrice,
         maxPrice: maxPrice,
         governorate: governorate,
-        status: status, // <-- تمرير الحالة للريبو
+        status: status, 
         page: filterCurrentPage.value,
       );
 
@@ -363,7 +363,7 @@ class ProductController extends GetxController {
         minPrice: activeFilterMinPrice,
         maxPrice: activeFilterMaxPrice,
         governorate: activeFilterGovernorate,
-        status: activeFilterStatus, // <-- تمرير الحالة للريبو عند تحميل المزيد
+        status: activeFilterStatus, 
         page: nextPage,
       );
 

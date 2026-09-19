@@ -52,7 +52,11 @@ class ProductDetailsPage extends StatelessWidget {
 
     final String quantity = _readString(['quantity'], fallback: '0');
 
-    final String rawStatus = _readString(['status'], fallback: 'new');
+    final String rawStatus = _readString([
+      'status',
+      'product_status',
+      'state',
+    ], fallback: 'new');
     final String displayStatus = rawStatus.toLowerCase() == 'used'
         ? AppLocalizations.of(context).translate('status_used')
         : AppLocalizations.of(context).translate('status_new');

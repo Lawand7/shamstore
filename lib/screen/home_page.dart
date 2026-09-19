@@ -244,6 +244,7 @@ class _HomePageState extends State<HomePage> {
       'governorate': product.governorate,
       'price': _formatPrice(product.price),
       'quantity': product.quantity,
+      'status': product.status, // <-- السطر الجذري الذي كان مفقوداً
       'product_image_url': product.productImageUrl,
       'imageUrl': product.fullImageUrl,
       'product_url': product.productUrl,
